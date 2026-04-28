@@ -12,6 +12,15 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Node 20 deprecation note (2026-04):
+# actions/checkout@v4, pnpm/action-setup@v4, and actions/setup-node@v4 still
+# bundle Node.js 20 as their JS runtime and emit deprecation warnings.
+# Warnings are non-blocking; revisit when these actions ship Node 24 builds
+# (likely actions/checkout@v5 etc.). Opting in early via
+# `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` is intentionally NOT set —
+# upstream actions haven't certified Node 24 yet, and a forced bump would
+# risk breaking CI for a cosmetic warning.
+
 jobs:
   ci:
     name: lint + typecheck + test
@@ -22,9 +31,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up pnpm
+        # Version is read from the `packageManager` field in root package.json.
+        # Setting it here as well triggers a "multiple versions specified" error.
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -53,9 +62,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up pnpm
+        # Version is read from the `packageManager` field in root package.json.
+        # Setting it here as well triggers a "multiple versions specified" error.
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Set up Node
         uses: actions/setup-node@v4
