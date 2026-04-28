@@ -131,11 +131,23 @@ importers:
         specifier: ^3.0.5
         version: 3.2.4(@types/node@22.19.17)(jiti@1.21.7)(terser@5.46.2)(tsx@4.21.0)
 
+  packages/hosted-features:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   packages/shared:
     dependencies:
       zod:
         specifier: ^3.25.0
         version: 3.25.76
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/ui:
     devDependencies:
       typescript:
         specifier: ^5.7.2

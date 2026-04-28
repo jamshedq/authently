@@ -1,0 +1,28 @@
+Authently Hosted Features — Proprietary License
+
+Copyright © 2026 The Authently project operator. All Rights Reserved.
+
+The contents of this directory (`packages/hosted-features/**`) are
+proprietary to the operator of the hosted commercial offering of Authently.
+They are NOT covered by the GNU Affero General Public License that governs
+the rest of the repository.
+
+Permitted ONLY with a separate written commercial agreement with the
+project operator:
+
+  - Reproduction (in whole or in part)
+  - Modification or derivative works
+  - Distribution, sublicensing, or hosting
+  - Use within self-hosted or forked deployments
+
+Self-hosters, forkers, and contributors to the open-source Authently
+project must EXCLUDE this directory from any distribution they make. The
+repository's `.gitattributes` marks this directory as `export-ignore`,
+which causes `git archive` to omit it by default.
+
+For commercial licensing inquiries, contact the project operator (see the
+repository profile page).
+
+For full terms — including how this carve-out interacts with the AGPL
+license that governs the rest of the repository — see
+`../../LICENSE-PROPRIETARY` at the repo root.
