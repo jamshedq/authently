@@ -33,6 +33,12 @@ const ServerEnvSchema = z.object({
   SENTRY_PROJECT: z.string().min(1).optional(),
   AXIOM_TOKEN: z.string().min(1).optional(),
   AXIOM_DATASET: z.string().min(1).optional(),
+  // Stripe — both the webhook route and any outbound call refuse to start
+  // without these. Schema marks them optional because Sprint 01 doesn't
+  // require either; the webhook route surfaces a clear error when invoked
+  // without them set.
+  STRIPE_SECRET_KEY: z.string().min(1).optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof ServerEnvSchema>;
