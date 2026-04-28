@@ -97,6 +97,15 @@ export default async function DashboardPage({ params }: Props) {
         This is a Sprint 01 placeholder. Real dashboard widgets land in later
         sprints.
       </p>
+
+      <form action="/api/auth/sign-out" method="post">
+        <button
+          type="submit"
+          className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+        >
+          Sign out
+        </button>
+      </form>
     </div>
   );
 }

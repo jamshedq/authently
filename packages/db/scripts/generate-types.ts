@@ -68,21 +68,41 @@ if (result.status !== 0) {
   process.exit(result.status ?? 1);
 }
 
-const banner = `/*
- * THIS FILE IS GENERATED — DO NOT EDIT BY HAND.
+// AGPL header — required by the license-header CI check on every .ts file
+// in OSS packages. Prepended verbatim so the generated file passes
+// `pnpm test:license-headers` without manual edits.
+const agplHeader = `/*
+ * Authently — Open-source AI content engine
+ * Copyright (C) 2026 The Authently Contributors
  *
- * Source:    packages/db/scripts/generate-types.ts
- * Generator: supabase gen types typescript
- * Schemas:   ${SCHEMAS.join(", ")}
+ * This file is part of Authently.
  *
- * Regenerate with: pnpm db:gen-types
+ * Authently is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Authently is licensed AGPL-3.0-or-later. See LICENSE at the repo root.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 `;
 
-writeFileSync(TYPES_OUTPUT, banner + result.stdout, "utf8");
+const generatedBanner = `// THIS FILE IS GENERATED — DO NOT EDIT BY HAND.
+// Source:    packages/db/scripts/generate-types.ts
+// Generator: supabase gen types typescript
+// Schemas:   ${SCHEMAS.join(", ")}
+// Regenerate with: pnpm db:gen-types
+
+`;
+
+const fileContents = agplHeader + generatedBanner + result.stdout;
+writeFileSync(TYPES_OUTPUT, fileContents, "utf8");
 console.log(
-  `[gen:types] wrote ${TYPES_OUTPUT} (${result.stdout.length} bytes).`,
+  `[gen:types] wrote ${TYPES_OUTPUT} (${fileContents.length} bytes).`,
 );

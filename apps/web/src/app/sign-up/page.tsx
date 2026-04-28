@@ -21,11 +21,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { SignInForm } from "./sign-in-form";
+import { SignUpForm } from "./sign-up-form";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage() {
+export default async function SignUpPage() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -37,16 +37,16 @@ export default async function LoginPage() {
   return (
     <div className="mx-auto max-w-md space-y-6 py-12">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Create account</h1>
         <p className="text-sm text-muted-foreground">
-          Welcome back to Authently.
+          Sign up for Authently. Your workspace is created automatically.
         </p>
       </div>
-      <SignInForm />
+      <SignUpForm />
       <p className="text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link href="/sign-up" className="font-medium underline">
-          Sign up
+        Already have an account?{" "}
+        <Link href="/login" className="font-medium underline">
+          Sign in
         </Link>
       </p>
     </div>

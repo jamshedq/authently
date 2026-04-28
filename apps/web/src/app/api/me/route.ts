@@ -18,37 +18,22 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import Link from "next/link";
-import { redirect } from "next/navigation";
+import { withErrorHandling } from "@/lib/api/handler";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { SignInForm } from "./sign-in-form";
+import { getCurrentUserWithMemberships } from "@/services/users/get-current-user-with-memberships";
 
-export const dynamic = "force-dynamic";
-
-export default async function LoginPage() {
+/**
+ * GET /api/me
+ *
+ * Returns the authenticated user and the workspaces they're a member of.
+ *
+ * RLS-only: the request-scoped server client carries the user's session
+ * cookies, and every SELECT on workspace_members / workspaces is gated by
+ * the policies from migration 20260428000001. Non-members can never appear
+ * in the response. There is no service-role escape hatch in this path.
+ */
+export const GET = withErrorHandling(async () => {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) {
-    redirect("/app");
-  }
-
-  return (
-    <div className="mx-auto max-w-md space-y-6 py-12">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back to Authently.
-        </p>
-      </div>
-      <SignInForm />
-      <p className="text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link href="/sign-up" className="font-medium underline">
-          Sign up
-        </Link>
-      </p>
-    </div>
-  );
-}
+  const result = await getCurrentUserWithMemberships(supabase);
+  return Response.json(result);
+});

@@ -18,37 +18,19 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import Link from "next/link";
-import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
+import { withErrorHandling } from "@/lib/api/handler";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { SignInForm } from "./sign-in-form";
 
-export const dynamic = "force-dynamic";
-
-export default async function LoginPage() {
+/**
+ * POST /api/auth/sign-out
+ *
+ * Clears the user's session and redirects to /. Designed to be invoked from
+ * an HTML <form action="/api/auth/sign-out" method="post"> — works without
+ * client-side JavaScript.
+ */
+export const POST = withErrorHandling(async (request) => {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) {
-    redirect("/app");
-  }
-
-  return (
-    <div className="mx-auto max-w-md space-y-6 py-12">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back to Authently.
-        </p>
-      </div>
-      <SignInForm />
-      <p className="text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link href="/sign-up" className="font-medium underline">
-          Sign up
-        </Link>
-      </p>
-    </div>
-  );
-}
+  await supabase.auth.signOut();
+  return NextResponse.redirect(new URL("/", request.url), { status: 303 });
+});

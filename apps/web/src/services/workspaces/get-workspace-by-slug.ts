@@ -71,7 +71,10 @@ export async function getWorkspaceBySlug(
     id: data.id,
     name: data.name,
     slug: data.slug,
-    template: data.template,
+    // The DB CHECK constraint guarantees the value is one of the three
+    // template names; the generated row type is `string` because Postgres
+    // doesn't surface CHECK constraints to supabase's type generator.
+    template: data.template as WorkspaceForDashboard["template"],
     planTier: data.plan_tier,
   };
 }

@@ -18,37 +18,26 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { SignInForm } from "./sign-in-form";
+import { ensurePrimaryWorkspace } from "@/services/workspaces/ensure-primary-workspace";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage() {
+// Post-auth landing. The sign-up / sign-in forms drop the user here, and we
+// route them to their primary workspace dashboard. ensurePrimaryWorkspace
+// is idempotent: if the on_auth_user_created trigger fired during signUp
+// (the normal case), this just returns the existing workspace; if it
+// didn't, the same call creates one.
+export default async function AppPage() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) {
-    redirect("/app");
+  if (!user) {
+    redirect("/login");
   }
 
-  return (
-    <div className="mx-auto max-w-md space-y-6 py-12">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back to Authently.
-        </p>
-      </div>
-      <SignInForm />
-      <p className="text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link href="/sign-up" className="font-medium underline">
-          Sign up
-        </Link>
-      </p>
-    </div>
-  );
+  const workspace = await ensurePrimaryWorkspace(supabase);
+  redirect(`/app/${workspace.slug}/dashboard`);
 }
