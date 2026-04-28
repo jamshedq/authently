@@ -1,0 +1,26 @@
+{
+  "name": "content-engine",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Open-source, multi-tenant AI content engine. Working name CONTENT_ENGINE; final brand TBD.",
+  "license": "AGPL-3.0-or-later",
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:rls": "echo 'test:rls not yet implemented (Sprint 01, Step 3)' && exit 0",
+    "test:license-headers": "node scripts/check-license-headers.mjs",
+    "typecheck": "turbo run typecheck",
+    "db:migrate": "echo 'db:migrate not yet implemented (Sprint 01, Step 2)' && exit 0",
+    "db:reset": "echo 'db:reset not yet implemented (Sprint 01, Step 2)' && exit 0"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3"
+  }
+}

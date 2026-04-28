@@ -1,0 +1,20 @@
+PLACEHOLDER — REPLACE WITH THE CANONICAL AGPL-3.0 TEXT BEFORE PUBLISHING.
+
+The CONTENT_ENGINE project (working name; final brand TBD) is licensed under
+the GNU Affero General Public License, version 3.0 or later
+(SPDX: AGPL-3.0-or-later).
+
+Action required by a human:
+
+  1. Download the canonical license text from
+     https://www.gnu.org/licenses/agpl-3.0.txt
+  2. Replace the entire contents of this file with that text.
+  3. Commit the change with message: "chore: add canonical AGPL-3.0 license text".
+
+Until step 2 is completed, this repository is NOT cleared for public
+distribution. Do not announce, link, or push tagged releases until the
+canonical license text is in place.
+
+A separate proprietary carve-out applies to `packages/hosted-features/`. See
+`LICENSE-PROPRIETARY` for the scope of that exclusion. The carve-out does NOT
+modify the AGPL terms that govern the rest of the repository.

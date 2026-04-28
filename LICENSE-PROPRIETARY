@@ -1,0 +1,39 @@
+Proprietary License — Hosted-Features Carve-Out
+================================================
+
+The bulk of this repository is licensed under the GNU Affero General Public
+License version 3.0 or later (AGPL-3.0-or-later). See `LICENSE`.
+
+The contents of `packages/hosted-features/` are NOT covered by AGPL-3.0 and
+are NOT part of the open-source distribution. They are proprietary and
+reserved to the operator of the hosted commercial offering.
+
+Scope of the carve-out
+----------------------
+
+  - All source code, configuration, assets, and documentation under
+    `packages/hosted-features/**` are © 2026 the project operator,
+    All Rights Reserved.
+  - Self-hosters, forkers, and contributors to the open-source project may
+    NOT redistribute, modify, sublicense, or use the contents of
+    `packages/hosted-features/` without a separate written commercial
+    agreement with the project operator.
+  - The OSS distribution build of this project must exclude
+    `packages/hosted-features/`. The repository's `.gitattributes` marks the
+    directory as `export-ignore` so that `git archive` tarballs omit it by
+    default.
+
+Relationship to AGPL-3.0
+------------------------
+
+This notice is informational. It does NOT modify, weaken, or extend the
+AGPL-3.0 license that applies to the rest of the repository. Where this
+notice and the AGPL appear to conflict for a given file, the file's actual
+location is dispositive: files under `packages/hosted-features/` are
+proprietary; everything else is AGPL.
+
+Contact
+-------
+
+For commercial licensing of hosted-only features, contact the project
+operator (see the repository's profile page).
