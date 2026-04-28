@@ -1,0 +1,28 @@
+{
+  "name": "@authently/jobs",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "trigger dev",
+    "deploy": "trigger deploy",
+    "build": "trigger deploy --skip-deploy --skip-promotion",
+    "lint": "echo 'lint not yet wired (Sprint 01, Step 4)' && exit 0",
+    "test": "echo 'no tests yet (Sprint 01, Step 6+)' && exit 0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@authently/db": "workspace:*",
+    "@authently/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.45.4",
+    "@trigger.dev/sdk": "^3.3.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@trigger.dev/build": "^3.3.0",
+    "@types/node": "^22.10.0",
+    "trigger.dev": "^3.3.0",
+    "typescript": "^5.7.2"
+  }
+}

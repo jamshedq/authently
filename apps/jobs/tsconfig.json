@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "incremental": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*", "trigger.config.ts"],
+  "exclude": ["node_modules", ".trigger"]
+}
