@@ -15,6 +15,7 @@
     "isolatedModules": true,
     "incremental": true,
     "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
     "allowJs": false,
     "noEmit": true
   },

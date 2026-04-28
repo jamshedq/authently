@@ -137,6 +137,9 @@ dist
 
 # --- Authently / stack-specific additions ---
 
+# Per-package test env
+.env.test
+
 # Turborepo
 .turbo
 

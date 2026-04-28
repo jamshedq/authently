@@ -15,7 +15,7 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "test:rls": "echo 'test:rls not yet implemented (Sprint 01, Step 3)' && exit 0",
+    "test:rls": "pnpm --filter @authently/db test:rls",
     "test:license-headers": "node scripts/check-license-headers.mjs",
     "typecheck": "turbo run typecheck",
     "db:migrate": "supabase migration up",
