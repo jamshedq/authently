@@ -1,11 +1,15 @@
-# CONTENT_ENGINE
+# Authently
 
-> Working name. Final brand to be selected.
+> Your voice, your platforms, your keys.
 
 An open-source, multi-tenant AI content engine for technical creators who want
 to publish across social platforms without losing their voice to AI generic-ness.
 
 This is alpha software, in active development, built in public. Sprint 1 of 28.
+
+- Site: [authently.io](https://authently.io)
+- App (forthcoming): [authently.app](https://authently.app)
+- Dev / docs (forthcoming): [authently.dev](https://authently.dev)
 
 ## Status
 

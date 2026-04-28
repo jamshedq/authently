@@ -3,7 +3,7 @@
 > **Status: DRAFT.** Final wording requires legal review and project-owner
 > approval before activation. Do not assume this draft is binding.
 
-Thank you for your interest in contributing to CONTENT_ENGINE (the
+Thank you for your interest in contributing to Authently (the
 "Project"). This Contributor License Agreement ("Agreement") clarifies the
 intellectual property license granted with Contributions from any person or
 entity. By signing this Agreement, you accept and agree to its terms for your

@@ -152,6 +152,6 @@ On first sign-up, atomically:
 
 - Do NOT generate the LICENSE file content yourself. Use the canonical AGPL-3.0 text from gnu.org and let the human paste it in.
 - Do NOT generate the CLA text. Use Apache 2.0 CLA as a base, but the human approves the final wording.
-- The product name has not been finalized. Use placeholder `CONTENT_ENGINE` in code; do NOT pick a name.
+- The product name is **Authently**. Domains: authently.io (primary), authently.app, authently.dev.
 - The README should be honest and short. Do not write marketing copy. The build-in-public ethos starts here.
 - Every commit message should be conventional commits. The commit history is public; treat it as documentation.

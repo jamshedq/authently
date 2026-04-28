@@ -134,3 +134,31 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# --- Authently / stack-specific additions ---
+
+# Turborepo
+.turbo
+
+# Vercel
+.vercel
+
+# Trigger.dev
+.trigger
+
+# pnpm
+.pnpm-store
+
+# Supabase local state
+supabase/.branches
+supabase/.temp
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea
+*.swp
+*.swo
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

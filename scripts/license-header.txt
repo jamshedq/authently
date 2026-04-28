@@ -1,10 +1,10 @@
 /*
- * CONTENT_ENGINE — Open-source AI content engine
- * Copyright (C) 2026 The CONTENT_ENGINE Contributors
+ * Authently — Open-source AI content engine
+ * Copyright (C) 2026 The Authently Contributors
  *
- * This file is part of CONTENT_ENGINE.
+ * This file is part of Authently.
  *
- * CONTENT_ENGINE is free software: you can redistribute it and/or modify
+ * Authently is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.

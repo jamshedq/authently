@@ -1,8 +1,9 @@
 {
-  "name": "content-engine",
+  "name": "authently",
   "private": true,
   "version": "0.0.0",
-  "description": "Open-source, multi-tenant AI content engine. Working name CONTENT_ENGINE; final brand TBD.",
+  "description": "Authently — open-source, multi-tenant AI content engine.",
+  "homepage": "https://authently.io",
   "license": "AGPL-3.0-or-later",
   "packageManager": "pnpm@9.15.4",
   "engines": {

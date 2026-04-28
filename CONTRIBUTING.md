@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in contributing to CONTENT_ENGINE.
+Thanks for your interest in contributing to Authently.
 
 ## Process
 
