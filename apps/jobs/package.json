@@ -16,11 +16,11 @@
     "@authently/db": "workspace:*",
     "@authently/shared": "workspace:*",
     "@supabase/supabase-js": "^2.45.4",
-    "@trigger.dev/sdk": "^3.3.0",
+    "@trigger.dev/sdk": "4.4.4",
     "zod": "^3.25.0"
   },
   "devDependencies": {
-    "@trigger.dev/build": "^3.3.0",
+    "@trigger.dev/build": "4.4.4",
     "@types/node": "^22.10.0",
     "trigger.dev": "^3.3.0",
     "typescript": "^5.7.2"
