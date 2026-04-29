@@ -85,6 +85,7 @@ When working in `packages/voice` or anywhere it's invoked:
 - `packages/db/schema.sql` (current schema)
 - The relevant service file in `apps/web/src/services/`
 - For voice work: `packages/voice/README.md`
+- For UI work: `DESIGN.md` at repo root (visual design system)
 
 ## Files Claude should NEVER touch without explicit instruction
 
@@ -94,6 +95,7 @@ When working in `packages/voice` or anywhere it's invoked:
 - `docs/runbooks/` (operational truth, human-curated)
 - `LICENSE`, `CONTRIBUTING.md`, `CLA.md` (legal docs — human-only)
 - Anything in `packages/hosted-features/` unless explicitly working on a hosted feature
+- For UI work: DESIGN.md at repo root (visual design system)
 
 ## Tools & commands
 
