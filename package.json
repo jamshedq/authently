@@ -20,7 +20,8 @@
     "typecheck": "turbo run typecheck",
     "db:migrate": "supabase migration up",
     "db:reset": "supabase db reset",
-    "db:gen-types": "pnpm --filter @authently/db gen:types"
+    "db:gen-types": "pnpm --filter @authently/db gen:types",
+    "db:new": "pnpm --filter @authently/db run new"
   },
   "devDependencies": {
     "turbo": "^2.3.3"

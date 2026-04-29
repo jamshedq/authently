@@ -1,7 +1,7 @@
 # Observability Runbook
 
-Last updated: Sprint 01, Step 8 (initial). Future updates by humans during
-incident response or operational changes.
+Last updated: Sprint 02 (debug endpoint removed; verification path unified).
+Future updates by humans during incident response or operational changes.
 
 ## What's wired
 
@@ -30,39 +30,12 @@ In `apps/web/.env.local` (local dev) or the deployment env:
 
 See `apps/web/.env.local.example` for the canonical template.
 
-## Verifying locally
+## Verifying
 
-There's a dev-only debug endpoint that exercises both SDKs:
-
-```sh
-# 1. Set the relevant env vars in apps/web/.env.local
-# 2. Boot the dev server
-pnpm --filter @authently/web dev
-
-# 3. Hit the probe
-curl 'http://localhost:3000/api/__debug/observability?sentry=1&axiom=1'
-```
-
-Expected response (DSN/token set):
-
-```json
-{
-  "ok": true,
-  "sentry": "captured (DSN set — should appear in Sentry within seconds)",
-  "axiom":  "logged (AXIOM_TOKEN set — should appear in dataset within ~1 minute)"
-}
-```
-
-If a DSN/token is unset, the response is honest about it ("captured
-locally", "logged locally") and nothing reaches the upstream service.
-
-The endpoint returns `404` outside `NODE_ENV === "development"`, so it's
-inert in production builds. **It will be removed in Sprint 02** — see
-`apps/web/src/app/api/__debug/observability/route.ts` header.
-
-## Verifying in production (or staging)
-
-The debug endpoint is dev-only. To verify production:
+The verification path is identical across local dev, staging, and
+production — there's no debug shortcut. With env vars set (in
+`apps/web/.env.local` for local dev, or in the deployment environment),
+exercise the real app and watch the dashboards.
 
 ### Sentry
 
@@ -81,8 +54,7 @@ The debug endpoint is dev-only. To verify production:
 2. Hit any page that includes `<AxiomWebVitals />` (any page — it lives
    in the root layout). Web vitals should arrive within ~1 minute.
 3. Or trigger any route that uses `Logger` from `next-axiom` —
-   currently the Stripe webhook (`/api/webhooks/stripe`) and the debug
-   endpoint.
+   currently the Stripe webhook (`/api/webhooks/stripe`).
 4. If nothing arrives, check (a) `AXIOM_TOKEN` has ingest permission for
    the dataset, (b) the route actually called `await log.flush()`,
    (c) network egress isn't blocked.
@@ -132,10 +104,6 @@ The webhook should:
 3. Emit an Axiom log line
 
 If you trigger the same event twice quickly, the second response will
-include `"deduped": true` (in-memory dedup, single-process).
-
-## Sprint 02 cleanup
-
-When this runbook is no longer needed:
-- Delete `apps/web/src/app/api/__debug/observability/`.
-- Update or delete this runbook accordingly.
+include `"deduped": true` (in-memory dedup, single-process). The
+in-memory dedup graduates to a `stripe_events` table during Sprint 02
+billing work — see `docs/specs/SPRINT_CURRENT.md` D4.

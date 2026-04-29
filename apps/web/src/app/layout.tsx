@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   title: "Authently",
   description:
     "Open-source, multi-tenant AI content engine. Your voice, your platforms, your keys.",
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: { url: "/favicon.svg", type: "image/svg+xml" } },
 };
 
 export default function RootLayout({

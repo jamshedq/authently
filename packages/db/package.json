@@ -12,6 +12,7 @@
   },
   "scripts": {
     "gen:types": "tsx scripts/generate-types.ts",
+    "new": "tsx scripts/new-migration.ts",
     "lint": "echo 'lint not yet wired (Sprint 01, Step 4)' && exit 0",
     "test": "echo 'no non-RLS tests in @authently/db yet (run pnpm test:rls for the RLS gate)' && exit 0",
     "test:rls": "vitest run tests/rls",

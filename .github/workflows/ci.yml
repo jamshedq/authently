@@ -92,5 +92,15 @@ jobs:
             echo "SUPABASE_SERVICE_ROLE_KEY=$(echo "$STATUS" | grep '^SERVICE_ROLE_KEY=' | cut -d= -f2- | tr -d '\"')"
           } >> "$GITHUB_ENV"
 
+      - name: Verify types.ts is up to date
+        # Regenerates types from the live local Supabase schema and fails if
+        # the result differs from what's committed. Catches schema-vs-types
+        # drift at PR time. Lives in this job (not the lint/typecheck job)
+        # because it requires a running Supabase instance.
+        run: |
+          pnpm --filter @authently/db gen:types
+          git diff --exit-code packages/db/types.ts \
+            || (echo "::error::packages/db/types.ts is stale. Run 'pnpm db:gen-types' locally and commit the result." && exit 1)
+
       - name: RLS tests
         run: pnpm test:rls

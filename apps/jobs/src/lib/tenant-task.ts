@@ -18,7 +18,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { schemaTask } from "@trigger.dev/sdk/v3";
+import { schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { uuidSchema } from "@authently/shared";
 import { verifyWorkspaceExists } from "../services/workspaces/verify-workspace-exists.ts";

@@ -19,7 +19,7 @@ If a feature would violate one of these, do not ship it — even if a competitor
 
 ## Architecture in one paragraph
 
-Next.js 15 monorepo with Turbo. Web app + API routes in `apps/web`. Trigger.dev v3 for async work in `apps/jobs`. Modal-hosted Python worker for heavy media processing. Supabase Postgres with RLS as source of truth. Redis (Upstash) for rate limits + caching. S3 + CloudFront for media. Stripe for billing. All AI calls go through `packages/ai` with a model router. All platform calls go through `packages/adapters`. The Authenticity Engine lives in `packages/voice` and sits between source ingestion and remix output.
+Next.js 15 monorepo with Turbo. Web app + API routes in `apps/web`. Trigger.dev v4 for async work in `apps/jobs`. Modal-hosted Python worker for heavy media processing. Supabase Postgres with RLS as source of truth. Redis (Upstash) for rate limits + caching. S3 + CloudFront for media. Stripe for billing. All AI calls go through `packages/ai` with a model router. All platform calls go through `packages/adapters`. The Authenticity Engine lives in `packages/voice` and sits between source ingestion and remix output.
 
 ## Audiences (multi-tenant from day 1)
 
@@ -85,6 +85,7 @@ When working in `packages/voice` or anywhere it's invoked:
 - `packages/db/schema.sql` (current schema)
 - The relevant service file in `apps/web/src/services/`
 - For voice work: `packages/voice/README.md`
+- For jobs work: `apps/jobs/CLAUDE.md` (Trigger.dev v4 task development rules)
 - For UI work: `DESIGN.md` at repo root (visual design system)
 
 ## Files Claude should NEVER touch without explicit instruction
