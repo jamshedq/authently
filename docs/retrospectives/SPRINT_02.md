@@ -61,3 +61,15 @@ front-loaded tech debt in Sprint 03.
 3. Other call sites (e.g. `/api/me/route.ts`) keep the no-arg ergonomics — they only run `getUser` once today.
 
 **When:** Sprint 03 polish item, alongside the supabase-js typed-helper consolidation. Same code-path, similar shape of refactor.
+
+### Workspace settings + members lacked navigation entries
+
+**Discovered:** Sprint 02 Section B browser smoke test.
+
+After Section B shipped, the only way to reach `/app/[slug]/settings` was by typing the URL. Members management (Section C) had the same problem. Both gaps are addressed in Section C's UI commit, which adds "Workspace settings" + "Members" entries to the UserMenu's WORKSPACES section. **Status: addressed in Section C Commit 2.**
+
+### Header dev-cache surfaced again post-login/logout
+
+**Discovered:** Sprint 02 Section B browser smoke test.
+
+The Server Component header occasionally serves stale signed-in/out state until a hard refresh in dev. Section C's UI commit lifts `export const dynamic = "force-dynamic"` to `apps/web/src/app/app/[workspaceSlug]/layout.tsx`, which forces SSR per request for the entire authed tree. Trade-off: prevents static rendering of `/app/[slug]/*` — acceptable because every page in that tree is auth-gated dynamic anyway. **Status: addressed in Section C Commit 2.**

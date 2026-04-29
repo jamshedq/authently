@@ -1,0 +1,33 @@
+/*
+ * Authently — Open-source AI content engine
+ * Copyright (C) 2026 The Authently Contributors
+ *
+ * This file is part of Authently.
+ *
+ * Authently is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// PATCH /api/ws/[slug]/members/[userId] body schema. Only the
+// non-owner roles are assignable here — promote-to-owner is the
+// Sprint 03 transfer-ownership flow.
+
+import { z } from "zod";
+
+export const AssignableMemberRoleSchema = z.enum(["admin", "editor", "viewer"]);
+export type AssignableMemberRole = z.infer<typeof AssignableMemberRoleSchema>;
+
+export const UpdateMemberRoleSchema = z.object({
+  role: AssignableMemberRoleSchema,
+});
+export type UpdateMemberRoleInput = z.infer<typeof UpdateMemberRoleSchema>;
