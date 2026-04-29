@@ -35,20 +35,30 @@ export default async function SignUpPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-6 py-12">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Create account</h1>
-        <p className="text-sm text-muted-foreground">
-          Sign up for Authently. Your workspace is created automatically.
+    <div className="container">
+      <div className="mx-auto max-w-md space-y-8 py-20">
+        <div className="space-y-2">
+          <p className="font-mono text-[12px] font-medium uppercase tracking-[0.6px] text-muted-foreground">
+            Get started
+          </p>
+          <h1 className="text-[32px] font-semibold tracking-[-0.4px] leading-[1.15] text-foreground">
+            Create your Authently account
+          </h1>
+          <p className="text-[14px] text-muted-foreground">
+            Your workspace is created automatically.
+          </p>
+        </div>
+        <SignUpForm />
+        <p className="text-[14px] text-muted-foreground">
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-foreground transition hover:text-brand"
+          >
+            Sign in
+          </Link>
         </p>
       </div>
-      <SignUpForm />
-      <p className="text-sm text-muted-foreground">
-        Already have an account?{" "}
-        <Link href="/login" className="font-medium underline">
-          Sign in
-        </Link>
-      </p>
     </div>
   );
 }

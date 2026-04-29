@@ -19,6 +19,7 @@
  */
 
 import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getWorkspaceBySlug } from "@/services/workspaces/get-workspace-by-slug";
 
@@ -58,54 +59,55 @@ export default async function DashboardPage({ params }: Props) {
 
   // 3. Render. Placeholder content; real dashboard surfaces in later sprints.
   return (
-    <div className="mx-auto max-w-3xl space-y-6 py-8">
-      <header className="space-y-1">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">
-          Workspace
+    <div className="container">
+      <div className="mx-auto max-w-3xl space-y-10 py-12">
+        <header className="space-y-3">
+          <p className="font-mono text-[12px] font-medium uppercase tracking-[0.6px] text-muted-foreground">
+            Workspace
+          </p>
+          <h1 className="text-[40px] font-semibold tracking-[-0.8px] leading-[1.1] text-foreground">
+            Welcome to {workspace.name}
+          </h1>
+        </header>
+
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-[0_2px_4px_rgba(0,0,0,0.03)]">
+            <dt className="font-mono text-[12px] font-medium uppercase tracking-[0.6px] text-muted-foreground">
+              Slug
+            </dt>
+            <dd className="mt-2 text-[16px] font-medium text-foreground">
+              {workspace.slug}
+            </dd>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-[0_2px_4px_rgba(0,0,0,0.03)]">
+            <dt className="font-mono text-[12px] font-medium uppercase tracking-[0.6px] text-muted-foreground">
+              Template
+            </dt>
+            <dd className="mt-2 text-[16px] font-medium capitalize text-foreground">
+              {workspace.template}
+            </dd>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-[0_2px_4px_rgba(0,0,0,0.03)]">
+            <dt className="font-mono text-[12px] font-medium uppercase tracking-[0.6px] text-muted-foreground">
+              Plan
+            </dt>
+            <dd className="mt-2 text-[16px] font-medium capitalize text-foreground">
+              {workspace.planTier}
+            </dd>
+          </div>
+        </dl>
+
+        <p className="text-[14px] text-muted-foreground">
+          This is a Sprint 01 placeholder. Real dashboard widgets land in later
+          sprints.
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Welcome to {workspace.name}
-        </h1>
-      </header>
 
-      <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-md border border-border p-4">
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-            Slug
-          </dt>
-          <dd className="mt-1 text-sm font-medium">{workspace.slug}</dd>
-        </div>
-        <div className="rounded-md border border-border p-4">
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-            Template
-          </dt>
-          <dd className="mt-1 text-sm font-medium capitalize">
-            {workspace.template}
-          </dd>
-        </div>
-        <div className="rounded-md border border-border p-4">
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-            Plan
-          </dt>
-          <dd className="mt-1 text-sm font-medium capitalize">
-            {workspace.planTier}
-          </dd>
-        </div>
-      </dl>
-
-      <p className="text-sm text-muted-foreground">
-        This is a Sprint 01 placeholder. Real dashboard widgets land in later
-        sprints.
-      </p>
-
-      <form action="/api/auth/sign-out" method="post">
-        <button
-          type="submit"
-          className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-secondary"
-        >
-          Sign out
-        </button>
-      </form>
+        <form action="/api/auth/sign-out" method="post">
+          <Button type="submit" variant="ghost" size="sm">
+            Sign out
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

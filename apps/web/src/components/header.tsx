@@ -20,15 +20,22 @@
 
 import Link from "next/link";
 
-// Server Component — no nav yet (S02 brings the workspace switcher).
+// Server Component. Sticky white header with backdrop-blur (DESIGN.md §4
+// Navigation). The "alpha" badge follows the Mintlify mono-badge pattern:
+// uppercase Geist Mono, brand-light fill, brand-deep text, full pill.
 export function Header() {
   return (
-    <header className="border-b border-border bg-background">
+    <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md backdrop-saturate-150">
       <div className="container flex h-14 items-center justify-between">
-        <Link href="/" className="text-sm font-medium tracking-tight">
+        <Link
+          href="/"
+          className="text-[15px] font-medium tracking-tight text-foreground transition hover:text-brand"
+        >
           Authently
         </Link>
-        <span className="text-xs text-muted-foreground">alpha</span>
+        <span className="rounded-full bg-brand-light px-2.5 py-0.5 font-mono text-[11px] font-medium uppercase tracking-[0.6px] text-brand-deep">
+          alpha
+        </span>
       </div>
     </header>
   );

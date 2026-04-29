@@ -22,6 +22,9 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export function SignUpForm() {
@@ -62,26 +65,21 @@ export function SignUpForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      <div className="space-y-1">
-        <label htmlFor="fullName" className="block text-sm font-medium">
-          Full name
-        </label>
-        <input
+    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+      <div className="space-y-2">
+        <Label htmlFor="fullName">Full name</Label>
+        <Input
           id="fullName"
           name="fullName"
           type="text"
           autoComplete="name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
-      <div className="space-y-1">
-        <label htmlFor="email" className="block text-sm font-medium">
-          Email
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
           id="email"
           name="email"
           type="email"
@@ -89,14 +87,11 @@ export function SignUpForm() {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
-      <div className="space-y-1">
-        <label htmlFor="password" className="block text-sm font-medium">
-          Password
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="password">Password</Label>
+        <Input
           id="password"
           name="password"
           type="password"
@@ -105,22 +100,17 @@ export function SignUpForm() {
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        <p className="text-xs text-muted-foreground">Minimum 6 characters.</p>
+        <p className="text-[12px] text-muted-foreground">Minimum 6 characters.</p>
       </div>
       {error ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-[14px] text-destructive">
           {error}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={isPending}
-        className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition disabled:opacity-50"
-      >
+      <Button type="submit" disabled={isPending} className="w-full">
         {isPending ? "Creating account…" : "Create account"}
-      </button>
+      </Button>
     </form>
   );
 }

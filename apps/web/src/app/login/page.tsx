@@ -35,20 +35,27 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-6 py-12">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back to Authently.
+    <div className="container">
+      <div className="mx-auto max-w-md space-y-8 py-20">
+        <div className="space-y-2">
+          <p className="font-mono text-[12px] font-medium uppercase tracking-[0.6px] text-muted-foreground">
+            Welcome back
+          </p>
+          <h1 className="text-[32px] font-semibold tracking-[-0.4px] leading-[1.15] text-foreground">
+            Sign in to Authently
+          </h1>
+        </div>
+        <SignInForm />
+        <p className="text-[14px] text-muted-foreground">
+          Don&apos;t have an account?{" "}
+          <Link
+            href="/sign-up"
+            className="font-medium text-foreground transition hover:text-brand"
+          >
+            Sign up
+          </Link>
         </p>
       </div>
-      <SignInForm />
-      <p className="text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link href="/sign-up" className="font-medium underline">
-          Sign up
-        </Link>
-      </p>
     </div>
   );
 }

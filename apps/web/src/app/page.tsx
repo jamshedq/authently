@@ -19,10 +19,11 @@
  */
 
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
-// Server Component. Sprint 01 placeholder landing page — minimal copy plus
-// sign-in / sign-up CTAs so users coming back via /api/auth/sign-out (which
-// redirects here) have an obvious path back into the app.
+// Server Component. Sprint 01 placeholder landing page styled per DESIGN.md
+// §4 "Atmospheric Hero" — green-to-white radial wash behind the headline,
+// dark pill primary + ghost pill secondary CTAs, tight display tracking.
 type Props = {
   searchParams: Promise<{ error?: string }>;
 };
@@ -31,41 +32,52 @@ export default async function HomePage({ searchParams }: Props) {
   const { error } = await searchParams;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 py-12">
-      <div className="space-y-3">
-        <h1 className="text-3xl font-semibold tracking-tight">Authently</h1>
-        <p className="text-base text-muted-foreground">
-          Your voice, your platforms, your keys.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Open-source, multi-tenant AI content engine. Sprint 01 — foundation
-          in progress.
-        </p>
-      </div>
+    <section className="relative overflow-hidden">
+      {/* Atmospheric green-white radial gradient (DESIGN.md §4) */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[480px] bg-[radial-gradient(60%_60%_at_50%_0%,hsl(var(--brand)/0.12)_0%,hsl(var(--brand)/0.04)_30%,transparent_70%)]"
+      />
 
-      {error === "no_workspace_access" ? (
-        <div
-          role="alert"
-          className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
-        >
-          You&apos;re not a member of that workspace, or it doesn&apos;t exist.
+      <div className="container">
+        <div className="mx-auto max-w-2xl space-y-8 pb-24 pt-24 lg:pt-32">
+          {/* Mono section label */}
+          <p className="font-mono text-[12px] font-medium uppercase tracking-[0.6px] text-muted-foreground">
+            Sprint 01 — Foundation
+          </p>
+
+          <div className="space-y-5">
+            <h1 className="text-[40px] font-semibold tracking-[-0.8px] leading-[1.1] text-foreground lg:text-[64px] lg:tracking-[-1.28px] lg:leading-[1.15]">
+              Authently
+            </h1>
+            <p className="max-w-xl text-[18px] leading-[1.5] text-muted-foreground">
+              Your voice, your platforms, your keys.
+            </p>
+            <p className="max-w-xl text-[16px] leading-[1.5] text-muted-foreground">
+              Open-source, multi-tenant AI content engine for technical
+              creators. Built in public, AGPL core, no vendor lock-in.
+            </p>
+          </div>
+
+          {error === "no_workspace_access" ? (
+            <div
+              role="alert"
+              className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-[14px] text-destructive"
+            >
+              You&apos;re not a member of that workspace, or it doesn&apos;t exist.
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button asChild>
+              <Link href="/login">Sign in</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/sign-up">Sign up</Link>
+            </Button>
+          </div>
         </div>
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <Link
-          href="/login"
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
-        >
-          Sign in
-        </Link>
-        <Link
-          href="/sign-up"
-          className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-secondary"
-        >
-          Sign up
-        </Link>
       </div>
-    </div>
+    </section>
   );
 }

@@ -20,8 +20,9 @@
 
 import type { Config } from "tailwindcss";
 
-// shadcn/ui — New York style, neutral base. Color tokens are CSS variables
-// declared in src/app/globals.css and consumed here as `hsl(var(--token))`.
+// Authently design system (Mintlify-inspired). Tokens live in
+// src/app/globals.css; Tailwind colors here resolve to those CSS variables
+// so future dark-mode switching is purely a CSS concern.
 const config: Config = {
   darkMode: ["class"],
   content: [
@@ -68,11 +69,24 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Authently brand — DESIGN.md §2. Used sparingly for focus rings,
+        // hover states, and badges; never as a decorative fill.
+        brand: {
+          DEFAULT: "hsl(var(--brand))",
+          foreground: "hsl(var(--brand-foreground))",
+          light: "hsl(var(--brand-light))",
+          deep: "hsl(var(--brand-deep))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        // Variables set on <html> by next/font in src/app/layout.tsx.
+        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
     },
   },

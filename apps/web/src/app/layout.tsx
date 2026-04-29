@@ -20,9 +20,22 @@
 
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { Inter, Geist_Mono } from "next/font/google";
 import { AxiomWebVitals } from "next-axiom";
 import { Header } from "@/components/header";
 import "./globals.css";
+
+// Self-hosted via next/font (no external CDN; zero CLS).
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Authently",
@@ -37,12 +50,16 @@ export default function RootLayout({
   children: ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+    <html
+      lang="en"
+      className={`${inter.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         {/* AxiomWebVitals is a no-op without AXIOM_TOKEN / AXIOM_DATASET. */}
         <AxiomWebVitals />
         <Header />
-        <main className="container py-8">{children}</main>
+        <main>{children}</main>
       </body>
     </html>
   );

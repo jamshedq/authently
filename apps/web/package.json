@@ -15,7 +15,10 @@
   "dependencies": {
     "@authently/db": "workspace:*",
     "@authently/shared": "workspace:*",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
     "@sentry/nextjs": "^8.45.0",
+    "class-variance-authority": "^0.7.1",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",
     "clsx": "^2.1.1",

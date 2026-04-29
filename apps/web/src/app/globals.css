@@ -3,53 +3,92 @@
 @tailwind utilities;
 
 /*
- * shadcn/ui — New York style, neutral base color.
- * Variables sourced from https://ui.shadcn.com/themes (neutral preset).
+ * Authently design tokens. Mintlify-inspired (see DESIGN.md). White canvas,
+ * near-black text, brand green (#18E299) used sparingly for CTAs / focus.
+ *
+ * Values are HSL components only (no `hsl()` wrapper) so they compose with
+ * Tailwind's `hsl(var(--token))` pattern. Border alpha (rgba(0,0,0,0.05))
+ * is BAKED to its visual equivalent over white (#f2f2f2 ≈ 0 0% 95%) — see
+ * the trade-off discussion in the Sprint 01.5 plan.
  */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    /* Surfaces */
+    --background: 0 0% 100%;        /* #ffffff */
+    --foreground: 0 0% 5.1%;        /* #0d0d0d near-black */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 0 0% 5.1%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --popover-foreground: 0 0% 5.1%;
+
+    /* Primary CTA = near-black on white */
+    --primary: 0 0% 5.1%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary / muted / accent — used by shadcn primitives */
+    --secondary: 0 0% 96.1%;        /* #f5f5f5 Gray 100 */
+    --secondary-foreground: 0 0% 5.1%;
+    --muted: 0 0% 98%;              /* #fafafa Gray 50 */
+    --muted-foreground: 0 0% 40%;   /* #666666 Gray 700 (DESIGN.md body) */
     --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
+    --accent-foreground: 0 0% 5.1%;
+
+    /* Destructive / error red */
+    --destructive: 0 60% 58%;       /* #d45656 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders + inputs (alpha baked over white) */
+    --border: 0 0% 95%;             /* ≈ rgba(0,0,0,0.05) on #fff */
+    --input: 0 0% 92%;              /* ≈ rgba(0,0,0,0.08) on #fff */
+
+    /* Focus ring = brand green per DESIGN.md */
+    --ring: 155 78% 49%;
+
+    /* Card / container radius */
+    --radius: 1rem;                 /* 16px (DESIGN.md card radius) */
+
+    /* Brand */
+    --brand: 155 78% 49%;           /* #18E299 */
+    --brand-foreground: 0 0% 5.1%;
+    --brand-light: 152 80% 91%;     /* #d4fae8 */
+    --brand-deep: 152 84% 36%;      /* #0fa76e */
   }
 
+  /*
+   * Dark mode tokens are populated from DESIGN.md §7 so a future toggle
+   * lights up correctly. No `dark:` modifier classes are emitted in JSX
+   * during this pass — we ship light-only for Sprint 01.5.
+   */
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --background: 0 0% 5.1%;        /* #0d0d0d */
+    --foreground: 0 0% 92.9%;       /* #ededed */
+    --card: 0 0% 7.8%;              /* #141414 */
+    --card-foreground: 0 0% 92.9%;
+    --popover: 0 0% 7.8%;
+    --popover-foreground: 0 0% 92.9%;
+
+    --primary: 0 0% 92.9%;
+    --primary-foreground: 0 0% 5.1%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 92.9%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 62.7%; /* #a0a0a0 */
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 92.9%;
+
+    --destructive: 0 60% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 12%;             /* ≈ rgba(255,255,255,0.08) on #0d0d0d */
+    --input: 0 0% 14%;
+    --ring: 155 78% 49%;
+
+    /* Brand stays the same — green works on both backgrounds. */
+    --brand: 155 78% 49%;
+    --brand-foreground: 0 0% 5.1%;
+    --brand-light: 152 50% 22%;     /* deeper green-tinted bg in dark */
+    --brand-deep: 152 70% 60%;      /* lighter text on dark badges */
   }
 }
 
@@ -58,6 +97,6 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-foreground;
   }
 }

@@ -22,6 +22,9 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export function SignInForm() {
@@ -55,12 +58,10 @@ export function SignInForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      <div className="space-y-1">
-        <label htmlFor="email" className="block text-sm font-medium">
-          Email
-        </label>
-        <input
+    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
           id="email"
           name="email"
           type="email"
@@ -68,14 +69,11 @@ export function SignInForm() {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
-      <div className="space-y-1">
-        <label htmlFor="password" className="block text-sm font-medium">
-          Password
-        </label>
-        <input
+      <div className="space-y-2">
+        <Label htmlFor="password">Password</Label>
+        <Input
           id="password"
           name="password"
           type="password"
@@ -84,21 +82,16 @@ export function SignInForm() {
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
       {error ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-[14px] text-destructive">
           {error}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={isPending}
-        className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition disabled:opacity-50"
-      >
+      <Button type="submit" disabled={isPending} className="w-full">
         {isPending ? "Signing in…" : "Sign in"}
-      </button>
+      </Button>
     </form>
   );
 }
