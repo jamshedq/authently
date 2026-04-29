@@ -19,11 +19,26 @@
  */
 
 import Link from "next/link";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { UserMenu } from "@/components/user-menu";
 
 // Server Component. Sticky white header with backdrop-blur (DESIGN.md §4
-// Navigation). The "alpha" badge follows the Mintlify mono-badge pattern:
-// uppercase Geist Mono, brand-light fill, brand-deep text, full pill.
-export function Header() {
+// Navigation). Decides which right-side cluster to render based on auth:
+//   - signed in     → UserMenu (avatar dropdown, see Section A3 spec)
+//   - anonymous     → "alpha" Mintlify-style mono-badge
+// Auth check uses the same `supabase.auth.getUser()` pattern as the
+// dashboard route — JWT-validated, not just cookie-trusted.
+export async function Header() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const fullName =
+    typeof user?.user_metadata?.["full_name"] === "string"
+      ? (user.user_metadata["full_name"] as string)
+      : null;
+
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md backdrop-saturate-150">
       <div className="container flex h-14 items-center justify-between">
@@ -33,9 +48,17 @@ export function Header() {
         >
           Authently
         </Link>
-        <span className="rounded-full bg-brand-light px-2.5 py-0.5 font-mono text-[11px] font-medium uppercase tracking-[0.6px] text-brand-deep">
-          alpha
-        </span>
+        {user ? (
+          <UserMenu
+            userId={user.id}
+            email={user.email ?? ""}
+            fullName={fullName}
+          />
+        ) : (
+          <span className="rounded-full bg-brand-light px-2.5 py-0.5 font-mono text-[11px] font-medium uppercase tracking-[0.6px] text-brand-deep">
+            alpha
+          </span>
+        )}
       </div>
     </header>
   );

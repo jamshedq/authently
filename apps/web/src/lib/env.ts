@@ -26,6 +26,11 @@ import { z } from "zod";
 const ServerEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  // Public origin used to construct absolute callback URLs (password-reset
+  // emails, future invitation links, OAuth callbacks). Required, with a
+  // dev-friendly default so local pnpm dev "just works"; production sets
+  // this explicitly via the platform's env config.
+  NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
   SENTRY_AUTH_TOKEN: z.string().min(1).optional(),

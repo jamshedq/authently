@@ -23,6 +23,7 @@ import type { ReactNode } from "react";
 import { Inter, Geist_Mono } from "next/font/google";
 import { AxiomWebVitals } from "next-axiom";
 import { Header } from "@/components/header";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 // Self-hosted via next/font (no external CDN; zero CLS).
@@ -60,6 +61,7 @@ export default function RootLayout({
         <AxiomWebVitals />
         <Header />
         <main>{children}</main>
+        <Toaster position="bottom-right" richColors />
       </body>
     </html>
   );
