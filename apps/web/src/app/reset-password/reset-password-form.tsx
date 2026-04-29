@@ -18,6 +18,38 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+// =============================================================================
+// PKCE migration (Sprint 03+)
+// -----------------------------------------------------------------------------
+// This component handles Supabase's IMPLICIT-flow recovery email by reading
+// access_token + refresh_token from the URL fragment in the browser. It works,
+// and the tokens are cleared from the address bar via history.replaceState
+// regardless of success or failure — but it's not the most modern Supabase
+// pattern. To migrate to PKCE (verifyOtp + token_hash):
+//
+//   1. Override the recovery email template in supabase/config.toml:
+//        [auth.email.template.recovery]
+//        subject = "Reset your Authently password"
+//        content_path = "./supabase/templates/recovery.html"
+//      and create supabase/templates/recovery.html with a link of the form:
+//        {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password
+//
+//   2. Add a route handler at apps/web/src/app/auth/confirm/route.ts:
+//        const { error } = await supabase.auth.verifyOtp({ token_hash, type });
+//        return NextResponse.redirect(new URL(next, origin), { status: 303 });
+//      with the same safeNext() open-redirect guard the existing
+//      /auth/callback handler uses.
+//
+//   3. Convert this file back to a Server-Component-driven page that just
+//      checks supabase.auth.getUser() — the session is already established
+//      server-side by /auth/confirm, so there's no fragment to read and no
+//      "processing" phase needed.
+//
+// On the hosted Supabase Dashboard the equivalent template lives at
+// Authentication → Email Templates → "Reset Password". Update the link href
+// the same way; everything else mirrors the local config.
+// =============================================================================
+
 "use client";
 
 import Link from "next/link";
@@ -64,12 +96,15 @@ export function ResetPasswordForm() {
           refresh_token: refreshToken,
         });
         if (cancelled) return;
+        // Clear the fragment unconditionally — on success the tokens have
+        // been consumed and we don't want them in the address bar; on
+        // failure they're already invalid (Supabase rejected them) but
+        // hygiene + browser-history privacy still call for a clean URL.
+        window.history.replaceState({}, "", window.location.pathname);
         if (setSessionError) {
           setPhase("invalid");
           return;
         }
-        // Clear the fragment so tokens aren't sitting in the address bar.
-        window.history.replaceState({}, "", window.location.pathname);
         setPhase("ready");
         return;
       }
