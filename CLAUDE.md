@@ -120,6 +120,12 @@ If a task is ambiguous or a decision isn't documented, STOP and ask the human. D
 - Anything that affects the OSS / proprietary boundary
 - Anything that affects the Authenticity Engine's user-visible behavior
 
+## Git workflow
+
+- GitHub Desktop is closed during agent sessions to prevent reflexive auto-pushing.
+- Pushes happen explicitly via terminal: `git push origin main`.
+- GitHub Desktop may be opened temporarily for diff review only — close before resuming agent work.
+
 ## Definition of done (every task)
 
 - [ ] Code compiles, typechecks clean

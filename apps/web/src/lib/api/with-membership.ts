@@ -46,6 +46,22 @@ export type MembershipContext<P extends Record<string, string>> = {
 };
 
 /**
+ * Optional gates applied after the auth + membership check passes.
+ *
+ * `requireRole` enforces a role-list predicate against the caller's
+ * membership row. The membership SELECT itself is RLS-gated by
+ * `workspace_members_select`; this option layers a role check on top so
+ * routes that mutate workspace state (e.g. PATCH /api/ws/[slug]) can stay
+ * thin while still rejecting editor/viewer callers with 403. The DB-level
+ * `workspaces_owner_admin_update` policy from migration 20260429213717 is
+ * the security floor — this is the API-layer mirror so route handlers
+ * fail fast with a clear error code instead of relying on RLS denial.
+ */
+export type WithMembershipOptions = {
+  requireRole?: readonly WorkspaceRole[];
+};
+
+/**
  * Wraps a route handler under /api/ws/[workspaceSlug]/* with the canonical
  * authentication + membership gate.
  *
@@ -55,17 +71,19 @@ export type MembershipContext<P extends Record<string, string>> = {
  *     → 403 FORBIDDEN. Both cases collapse to the same response, by design:
  *     a 404-vs-403 distinction would let an attacker probe whether a slug
  *     belongs to a workspace they don't have access to.
+ *   - Authenticated + member but role not in `options.requireRole`
+ *     → 403 FORBIDDEN.
  *
  * The membership lookup runs through the user's RLS-subject client: the
  * SELECT on `workspaces` is filtered by the `workspaces_member_select`
  * policy, which already encodes "is the caller a member?" — so a non-member
  * receives `null` for any slug, real or fake. The follow-up role lookup
- * exists only to read the role for the route handler's use (and would
- * succeed only if the workspace lookup did, since the same RLS predicate
- * applies to workspace_members).
+ * exists to (a) read the role for the route handler's use and (b) gate
+ * `requireRole`.
  */
 export function withMembership<P extends Record<string, string> = Record<string, string>>(
   handler: (ctx: MembershipContext<P & { workspaceSlug: string }>) => Promise<Response>,
+  options: WithMembershipOptions = {},
 ) {
   return async (
     request: Request,
@@ -102,6 +120,15 @@ export function withMembership<P extends Record<string, string> = Record<string,
         // Defense-in-depth: workspace was visible (so user is a member per
         // the RLS predicate), but the role row didn't materialize. Collapse
         // to 403 rather than leak the inconsistency.
+        throw new ForbiddenError();
+      }
+
+      // 4. Role gate. Same 403 collapse as above — never leak which roles
+      //    would have been sufficient for this endpoint.
+      if (
+        options.requireRole &&
+        !options.requireRole.includes(membership.role)
+      ) {
         throw new ForbiddenError();
       }
 

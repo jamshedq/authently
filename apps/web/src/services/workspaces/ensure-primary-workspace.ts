@@ -49,6 +49,10 @@ export async function ensurePrimaryWorkspace(
   // supabase-js v2.105 + exactOptionalPropertyTypes mis-infers the chain
   // to `never` for parameterless RPCs. Runtime behavior is correct; cast
   // pins the response type to what the SQL function actually returns.
+  // TODO(sprint-02-debt): one of three sites with the same workaround;
+  // see also create-workspace.ts (args-bearing RPC variant) and
+  // update-workspace.ts (`.update()` parameter variant). Consolidate into
+  // a shared typed helper — tracked in docs/retrospectives/SPRINT_02.md.
   const rpc = (await supabase.rpc(
     "api_ensure_my_workspace",
   )) as PostgrestSingleResponse<string>;

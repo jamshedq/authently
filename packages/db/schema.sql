@@ -29,11 +29,23 @@ create schema if not exists private;
 
 -- private.is_workspace_member(uuid): SECURITY DEFINER membership check used
 -- by RLS policies to avoid self-referential recursion on workspace_members.
+-- private.has_workspace_role(uuid, text[]): SECURITY DEFINER role-aware
+-- variant; used by workspaces_owner_admin_update and Section C policies.
 
 -- private.slugify(text): kebab-case-only sanitizer.
 -- private.generate_workspace_slug(text): "{slugified-base}-{8-hex-suffix}".
 -- private.handle_new_user(): AFTER INSERT trigger on auth.users that creates
 -- a workspace and an owner membership for the new user.
+-- private.ensure_workspace_for_user(uuid, text, text): idempotent
+-- bootstrap fallback used by /api/auth/post-signup.
+-- private.create_workspace_for_user(uuid, text): always-creates worker for
+-- public.api_create_workspace; emits a fresh workspace + owner membership.
+
+-- public.api_ensure_my_workspace(): RPC wrapper around
+-- private.ensure_workspace_for_user. Granted to authenticated.
+-- public.api_create_workspace(text): RPC wrapper around
+-- private.create_workspace_for_user; returns the new workspace's identity.
+-- Granted to authenticated.
 
 -- ---------- tables -----------------------------------------------------------
 
@@ -82,6 +94,17 @@ alter table public.smoke_test        enable row level security;
 create policy workspaces_member_select on public.workspaces
   for select to authenticated
   using (private.is_workspace_member(id));
+
+-- workspaces: UPDATE for owners and admins. Column-level grants further
+-- restrict the set to (name, template); slug, plan_tier, stripe_* are
+-- locked away from authenticated callers.
+create policy workspaces_owner_admin_update on public.workspaces
+  for update to authenticated
+  using (private.has_workspace_role(id, array['owner','admin']))
+  with check (private.has_workspace_role(id, array['owner','admin']));
+
+-- revoke update on public.workspaces from authenticated;
+-- grant update (name, template) on public.workspaces to authenticated;
 
 -- workspace_members: SELECT for self or co-members
 create policy workspace_members_select on public.workspace_members

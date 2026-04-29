@@ -41,11 +41,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_workspace_for_user: {
+        Args: { _name: string; _user_id: string }
+        Returns: string
+      }
       ensure_workspace_for_user: {
         Args: { _base_name: string; _email: string; _user_id: string }
         Returns: string
       }
       generate_workspace_slug: { Args: { _base: string }; Returns: string }
+      has_workspace_role: {
+        Args: { _roles: string[]; _workspace_id: string }
+        Returns: boolean
+      }
       is_workspace_member: { Args: { _workspace_id: string }; Returns: boolean }
       slugify: { Args: { _input: string }; Returns: string }
     }
@@ -157,6 +165,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      api_create_workspace: {
+        Args: { _name: string }
+        Returns: {
+          id: string
+          name: string
+          plan_tier: string
+          slug: string
+          template: string
+        }[]
+      }
       api_ensure_my_workspace: { Args: never; Returns: string }
     }
     Enums: {
