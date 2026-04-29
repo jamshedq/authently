@@ -26,6 +26,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -37,6 +39,7 @@ import {
 import { cn } from "@/lib/utils";
 import { colorFromUserId } from "@/lib/avatar/color-from-user-id";
 import { initialsFromUser } from "@/lib/avatar/initials-from-user";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type Props = {
   userId: string;
@@ -45,9 +48,25 @@ type Props = {
 };
 
 export function UserMenu({ userId, email, fullName }: Props) {
+  const router = useRouter();
   const initials = initialsFromUser({ fullName, email });
   const colorClasses = colorFromUserId(userId);
   const displayName = fullName ?? email;
+
+  async function handleSignOut() {
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Sign-out failed. Try again.");
+      return;
+    }
+    toast.success("Signed out");
+    // router.refresh() flushes any cached Server Component output
+    // (including the Header's user-vs-anonymous branch) before we
+    // navigate. Mirrors the sign-in form's post-auth pattern.
+    router.refresh();
+    router.push("/");
+  }
 
   return (
     <DropdownMenu>
@@ -89,14 +108,11 @@ export function UserMenu({ userId, email, fullName }: Props) {
           <Link href="/app/account">Account settings</Link>
         </DropdownMenuItem>
 
-        <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-3 py-2 text-[14px]">
-          {/* JS-free sign-out: posts to /api/auth/sign-out, which redirects
-              back to /. The form span keeps the menu's keyboard semantics. */}
-          <form action="/api/auth/sign-out" method="post" className="w-full">
-            <button type="submit" className="w-full text-left">
-              Sign out
-            </button>
-          </form>
+        <DropdownMenuItem
+          className="cursor-pointer rounded-lg px-3 py-2 text-[14px]"
+          onSelect={handleSignOut}
+        >
+          Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
