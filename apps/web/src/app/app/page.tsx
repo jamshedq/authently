@@ -18,17 +18,35 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+// Post-auth landing. Three branches:
+//   - unauthenticated      → /login
+//   - zero memberships     → render <EmptyWorkspaceState/> (Section B3)
+//   - one+ memberships     → cookie-aware redirect to a dashboard
+//
+// Cookie-aware redirect:
+//   1. Read `authently_last_workspace_slug` (set by the workspace
+//      layout on every visit to /app/[slug]/*).
+//   2. If the slug names a workspace the caller is still a member of,
+//      redirect there.
+//   3. Otherwise, redirect to the first membership in the list. Order
+//      is whatever Postgres returns; we don't track "most-recently-
+//      active" yet (Sprint 03+).
+//
+// The cookie does NOT grant access — even if it's tampered with, the
+// membership-list check before redirect ensures the user only ever
+// lands on a workspace they belong to.
+
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Header } from "@/components/header";
+import { EmptyWorkspaceState } from "@/components/empty-workspace-state";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ensurePrimaryWorkspace } from "@/services/workspaces/ensure-primary-workspace";
+import { getCurrentUserWithMemberships } from "@/services/users/get-current-user-with-memberships";
 
 export const dynamic = "force-dynamic";
 
-// Post-auth landing. The sign-up / sign-in forms drop the user here, and we
-// route them to their primary workspace dashboard. ensurePrimaryWorkspace
-// is idempotent: if the on_auth_user_created trigger fired during signUp
-// (the normal case), this just returns the existing workspace; if it
-// didn't, the same call creates one.
+const LAST_WORKSPACE_COOKIE = "authently_last_workspace_slug";
+
 export default async function AppPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -38,6 +56,25 @@ export default async function AppPage() {
     redirect("/login");
   }
 
-  const workspace = await ensurePrimaryWorkspace(supabase);
-  redirect(`/app/${workspace.slug}/dashboard`);
+  const { memberships } = await getCurrentUserWithMemberships(supabase);
+
+  if (memberships.length === 0) {
+    return (
+      <>
+        <Header />
+        <main className="container">
+          <EmptyWorkspaceState />
+        </main>
+      </>
+    );
+  }
+
+  const cookieStore = await cookies();
+  const last = cookieStore.get(LAST_WORKSPACE_COOKIE)?.value;
+  const slugs = new Set(memberships.map((m) => m.workspace.slug));
+
+  const target =
+    last && slugs.has(last) ? last : memberships[0]!.workspace.slug;
+
+  redirect(`/app/${target}/dashboard`);
 }

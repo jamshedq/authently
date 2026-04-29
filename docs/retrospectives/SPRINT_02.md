@@ -31,3 +31,33 @@ front-loaded tech debt in Sprint 03.
 **Sizing:** ~30-60 minutes. No behaviour change, just a centralisation refactor with the existing RLS test suite as the regression net.
 
 **When:** late Sprint 02 (after Section C/D land) or early Sprint 03's front-loaded tech debt block — same time slot used in S02 prep.
+
+### Workspace selection ordering is non-deterministic
+
+**Discovered:** Sprint 02 Section B, Commit 2.
+
+`/app/page.tsx` falls back to `memberships[0]` when the `authently_last_workspace_slug` cookie is unset or names a workspace the user is no longer a member of. The spec called for "ordered by most-recently-active", but `workspace_members` doesn't track that yet — so `memberships[0]` is whatever Postgres returns under RLS, with no `ORDER BY`. In practice this is stable per session but can drift across deployments or row writes.
+
+**Proposed work:**
+
+1. Add a `last_active_at timestamptz not null default now()` column to `workspace_members` in a Sprint 03 migration.
+2. Bump it on each `/app/[slug]/*` visit (cheap UPDATE alongside the existing cookie-set in the workspace layout, or via an explicit RPC).
+3. `getCurrentUserWithMemberships` (or its caller) sorts by `last_active_at desc`. The user-menu switcher and `/app/page.tsx` fallback both use that order.
+
+**When:** Sprint 03 — pairs naturally with the workspace deletion + ownership transfer work in the same sprint, since both touch `workspace_members`.
+
+### Header double-`getUser` on signed-in renders
+
+**Discovered:** Sprint 02 Section B, Commit 2.
+
+`apps/web/src/components/header.tsx` calls `auth.getUser()` directly to gate the signed-in/anonymous branch, then `getCurrentUserWithMemberships(supabase)` re-runs `auth.getUser()` internally. Two JWT-validation round-trips on every signed-in page render.
+
+**Why it's acceptable for Sprint 02:** Cold-render cost is <10ms; the validation hits Supabase Auth's verify-JWT path which is fast. Cleaner-to-read code (the early-return branch for anonymous) outweighs the micro-cost.
+
+**Proposed work:**
+
+1. Refactor `getCurrentUserWithMemberships` to accept a pre-fetched `User` parameter, falling back to `getUser()` when omitted.
+2. Update Header to pass through its already-fetched user.
+3. Other call sites (e.g. `/api/me/route.ts`) keep the no-arg ergonomics — they only run `getUser` once today.
+
+**When:** Sprint 03 polish item, alongside the supabase-js typed-helper consolidation. Same code-path, similar shape of refactor.
