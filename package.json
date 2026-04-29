@@ -16,6 +16,7 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "test:rls": "pnpm --filter @authently/db test:rls",
+    "test:auth": "pnpm --filter @authently/db test:auth",
     "test:license-headers": "node scripts/check-license-headers.mjs",
     "typecheck": "turbo run typecheck",
     "db:migrate": "supabase migration up",

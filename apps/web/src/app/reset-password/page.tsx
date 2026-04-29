@@ -18,53 +18,28 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { SignInForm } from "./sign-in-form";
+import { ResetPasswordForm } from "./reset-password-form";
 
+// The form Client Component handles the full state machine — reading
+// tokens from the URL fragment, bootstrapping the session, rendering
+// the form, and the invalid-link branch. The page is just the layout
+// shell so the Mintlify chrome (header, container, hero spacing) is
+// consistent with /forgot-password and /login.
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) {
-    redirect("/app");
-  }
-
+export default function ResetPasswordPage() {
   return (
     <div className="container">
       <div className="mx-auto max-w-md space-y-8 py-20">
         <div className="space-y-2">
           <p className="font-mono text-[12px] font-medium uppercase tracking-[0.6px] text-muted-foreground">
-            Welcome back
+            Reset password
           </p>
           <h1 className="text-[32px] font-semibold tracking-[-0.4px] leading-[1.15] text-foreground">
-            Sign in to Authently
+            Choose a new password
           </h1>
         </div>
-        <SignInForm />
-        <div className="space-y-2 text-[14px] text-muted-foreground">
-          <p>
-            <Link
-              href="/forgot-password"
-              className="font-medium text-foreground transition hover:text-brand"
-            >
-              Forgot password?
-            </Link>
-          </p>
-          <p>
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/sign-up"
-              className="font-medium text-foreground transition hover:text-brand"
-            >
-              Sign up
-            </Link>
-          </p>
-        </div>
+        <ResetPasswordForm />
       </div>
     </div>
   );

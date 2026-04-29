@@ -21,11 +21,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { SignInForm } from "./sign-in-form";
+import { ForgotPasswordForm } from "./forgot-password-form";
 
+// Already-authenticated users don't need this page — bounce them to /app.
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage() {
+export default async function ForgotPasswordPage() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -39,32 +40,25 @@ export default async function LoginPage() {
       <div className="mx-auto max-w-md space-y-8 py-20">
         <div className="space-y-2">
           <p className="font-mono text-[12px] font-medium uppercase tracking-[0.6px] text-muted-foreground">
-            Welcome back
+            Reset password
           </p>
           <h1 className="text-[32px] font-semibold tracking-[-0.4px] leading-[1.15] text-foreground">
-            Sign in to Authently
+            Forgot your password?
           </h1>
-        </div>
-        <SignInForm />
-        <div className="space-y-2 text-[14px] text-muted-foreground">
-          <p>
-            <Link
-              href="/forgot-password"
-              className="font-medium text-foreground transition hover:text-brand"
-            >
-              Forgot password?
-            </Link>
-          </p>
-          <p>
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/sign-up"
-              className="font-medium text-foreground transition hover:text-brand"
-            >
-              Sign up
-            </Link>
+          <p className="text-[14px] text-muted-foreground">
+            Enter your email and we&apos;ll send you a link to set a new one.
           </p>
         </div>
+        <ForgotPasswordForm />
+        <p className="text-[14px] text-muted-foreground">
+          Remembered it?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-foreground transition hover:text-brand"
+          >
+            Back to sign in
+          </Link>
+        </p>
       </div>
     </div>
   );

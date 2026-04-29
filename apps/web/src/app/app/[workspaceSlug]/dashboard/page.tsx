@@ -19,7 +19,6 @@
  */
 
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getWorkspaceBySlug } from "@/services/workspaces/get-workspace-by-slug";
 
@@ -99,14 +98,8 @@ export default async function DashboardPage({ params }: Props) {
 
         <p className="text-[14px] text-muted-foreground">
           This is a Sprint 01 placeholder. Real dashboard widgets land in later
-          sprints.
+          sprints. Sign out via the user menu in the header.
         </p>
-
-        <form action="/api/auth/sign-out" method="post">
-          <Button type="submit" variant="ghost" size="sm">
-            Sign out
-          </Button>
-        </form>
       </div>
     </div>
   );

@@ -104,3 +104,9 @@ jobs:
 
       - name: RLS tests
         run: pnpm test:rls
+
+      - name: Auth integration tests
+        # Exercises the password-reset flow end-to-end against the local
+        # Supabase + Inbucket instance (port 54324). Lives in this job
+        # for the same reason as the RLS tests: needs a running Supabase.
+        run: pnpm test:auth
