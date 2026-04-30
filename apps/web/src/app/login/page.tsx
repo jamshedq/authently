@@ -21,18 +21,32 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { safeNext } from "@/lib/auth/safe-next";
 import { SignInForm } from "./sign-in-form";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage() {
+type Props = {
+  searchParams: Promise<{ next?: string }>;
+};
+
+export default async function LoginPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const next = safeNext(params.next ?? null);
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (user) {
-    redirect("/app");
+    // Already signed in — honour the `next` redirect (e.g. coming from
+    // /invite/[token] with the user pre-authed from a different tab).
+    redirect(next);
   }
+
+  // Sign-up link preserves `next` so the flow survives the user
+  // bouncing between login and sign-up screens.
+  const signUpHref = `/sign-up?next=${encodeURIComponent(next)}`;
 
   return (
     <div className="container">
@@ -45,7 +59,7 @@ export default async function LoginPage() {
             Sign in to Authently
           </h1>
         </div>
-        <SignInForm />
+        <SignInForm next={next} />
         <div className="space-y-2 text-[14px] text-muted-foreground">
           <p>
             <Link
@@ -58,7 +72,7 @@ export default async function LoginPage() {
           <p>
             Don&apos;t have an account?{" "}
             <Link
-              href="/sign-up"
+              href={signUpHref}
               className="font-medium text-foreground transition hover:text-brand"
             >
               Sign up

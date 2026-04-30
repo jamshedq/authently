@@ -122,9 +122,16 @@ If a task is ambiguous or a decision isn't documented, STOP and ask the human. D
 
 ## Git workflow
 
-- GitHub Desktop is closed during agent sessions to prevent reflexive auto-pushing.
-- Pushes happen explicitly via terminal: `git push origin main`.
-- GitHub Desktop may be opened temporarily for diff review only — close before resuming agent work.
+- Direct pushes to `main` are blocked by GitHub branch protection.
+- Each Section/Commit happens on a feature branch named for its scope:
+  - `section-c-commit-2-ui`
+  - `section-d-commit-1-billing`
+  - etc.
+- Push to feature branch via terminal: `git push -u origin <branch-name>` (first time) or `git push` (subsequent).
+- After CI is green on the branch and manual smoke test passes, open a PR via `gh pr create` (or GitHub web UI) and merge.
+- Never attempt `git push origin main` directly — branch protection will reject it.
+- GitHub Desktop is closed during agent sessions.
+- If a commit auto-pushes via some unidentified mechanism, it lands on the feature branch only — main stays clean by structural enforcement (branch protection), not discipline.
 
 ## Definition of done (every task)
 

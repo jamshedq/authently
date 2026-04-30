@@ -73,3 +73,17 @@ After Section B shipped, the only way to reach `/app/[slug]/settings` was by typ
 **Discovered:** Sprint 02 Section B browser smoke test.
 
 The Server Component header occasionally serves stale signed-in/out state until a hard refresh in dev. Section C's UI commit lifts `export const dynamic = "force-dynamic"` to `apps/web/src/app/app/[workspaceSlug]/layout.tsx`, which forces SSR per request for the entire authed tree. Trade-off: prevents static rendering of `/app/[slug]/*` — acceptable because every page in that tree is auth-gated dynamic anyway. **Status: addressed in Section C Commit 2.**
+
+### RLS test count growing section-over-section
+
+**Discovered:** Sprint 02 Section C, Commit 1.
+
+Test count and run-time grow with every section: Section A added 9 RLS tests, Section B 16, Section C 39. CI's `RLS isolation tests` job now takes ~2m23s — well under the GitHub Actions 6-hour ceiling, but the slope is steep enough that we should plan for it before the suite hits 5+ minute runs.
+
+**Proposed work (when, not if):**
+
+1. Group tests into fast (`tests/rls/*-rls.test.ts` — pure SELECT/INSERT/DELETE policy probes) vs slow (`tests/rls/*-acceptance.test.ts`, `*-cascade.test.ts` — multi-step lifecycle flows).
+2. Run them in parallel via vitest's existing `--shard` flag, or split into separate CI jobs that each set up Supabase independently.
+3. Move email-flow tests (`tests/auth/password-reset.test.ts` + future invitation-email tests) to a tagged "needs-mailpit" group that can be skipped when Mailpit's container isn't available.
+
+**When:** Sprint 12 prep, or sooner if any single CI run starts to clear 5 minutes. **Not urgent.**
