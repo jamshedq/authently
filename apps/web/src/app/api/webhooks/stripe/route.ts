@@ -111,8 +111,13 @@ export async function POST(request: Request): Promise<Response> {
       type: event.type,
     });
 
+    let outcome: Awaited<ReturnType<typeof handleStripeEvent>>;
     try {
-      await handleStripeEvent(event);
+      // The in-memory `recordSeenEvent` above is the first-line dedup for
+      // retries that land on the same instance. The persistent dedup floor
+      // is `public.process_stripe_event`'s INSERT INTO stripe_events ...
+      // ON CONFLICT DO NOTHING, which catches replays across instances.
+      outcome = await handleStripeEvent(event);
     } catch (err) {
       Sentry.captureException(err, {
         tags: { source: "webhook.stripe", eventType: event.type },
@@ -123,14 +128,33 @@ export async function POST(request: Request): Promise<Response> {
         error: err instanceof Error ? err.message : String(err),
       });
       // Returning 5xx tells Stripe to retry. The in-memory dedup will
-      // catch the retry only if it lands on the same instance.
+      // catch the retry only if it lands on the same instance; the
+      // persistent stripe_events PK catches it everywhere.
       return Response.json(
         { received: true, handled: false },
         { status: 500 },
       );
     }
 
-    return Response.json({ received: true });
+    // outcome ∈ {'processed','deduplicated','unknown_event_type',
+    //            'unknown_price','workspace_not_found','subscription_mismatch',
+    //            'skipped_unhandled_type'}
+    // All non-throw outcomes return 200 — Stripe shouldn't retry on data
+    // we recognized but couldn't act on (those WARNINGs are surfaced by
+    // process_stripe_event for ops to investigate).
+    log.info("stripe event handled", {
+      eventId: event.id,
+      type: event.type,
+      outcome,
+    });
+    Sentry.addBreadcrumb({
+      category: "webhook.stripe",
+      message: `outcome ${outcome}`,
+      data: { eventId: event.id, type: event.type, outcome },
+      level: "info",
+    });
+
+    return Response.json({ received: true, outcome });
   } finally {
     await log.flush();
   }

@@ -550,3 +550,60 @@ extensions: [
 Extensions only affect deployment, not local development. Use `external` array for packages that shouldn't be bundled.
 
 <!-- TRIGGER.DEV config END -->
+
+<!-- AUTHENTLY-SPECIFIC START -->
+<!-- This section is hand-maintained. Content above this marker is synced from
+     the Trigger.dev v4 rule pack and may be regenerated; nothing below is. -->
+
+# Authently-specific conventions
+
+## Tenant tasks (the default)
+
+Every workspace-scoped task in this app uses `defineTenantTask` from
+`src/lib/tenant-task.ts`. The constructor merges `workspace_id` into the
+payload schema and verifies the workspace exists before the run body
+executes — this is the multi-tenant invariant from CLAUDE.md rule 4.
+
+If you're writing a new task, default to `defineTenantTask`.
+
+## System tasks (the exception)
+
+A task may bypass `defineTenantTask` only if it qualifies as a "system
+task" — see `apps/jobs/SYSTEM_TASKS.md` for the four-point gate and the
+current registry. Briefly: no caller-supplied input, all writes via
+`SECURITY DEFINER` RPCs granted to `service_role`, RPC is the sole source
+of workspace IDs, mutations are race-safe.
+
+The first system task in this codebase is `billing-grace-period` (Sprint
+02 D Commit 1). New system tasks require a registry entry in
+SYSTEM_TASKS.md and a perimeter test demonstrating that the underlying
+RPCs reject non-`service_role` callers.
+
+## Scheduled tasks (Trigger.dev v4)
+
+```ts
+import { schedules } from "@trigger.dev/sdk";
+
+export const dailyReport = schedules.task({
+  id: "daily-report",
+  cron: "0 6 * * *",  // UTC by default
+  run: async (payload) => {
+    // payload: { timestamp: Date, lastTimestamp?: Date, scheduleId, upcoming }
+  },
+});
+```
+
+For timezone-specific schedules, use the object form:
+```ts
+cron: { pattern: "0 5 * * *", timezone: "America/New_York" }
+```
+
+The schedule registers automatically when `pnpm --filter @authently/jobs
+dev` runs locally and on `trigger deploy` for production. To test a
+scheduled task body without waiting for cron, use the Trigger.dev
+dashboard's "Test run" button.
+
+System tasks (no `workspace_id`) and tenant tasks both use
+`schedules.task` for cron — the difference is whether the run body goes
+through `defineTenantTask` semantics or not.
+<!-- AUTHENTLY-SPECIFIC END -->

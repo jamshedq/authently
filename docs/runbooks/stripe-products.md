@@ -114,11 +114,13 @@ Output is a single line: `whsec_...`. Copy it. This is `STRIPE_WEBHOOK_SECRET`.
 ```bash
 stripe listen \
   --forward-to localhost:3000/api/webhooks/stripe \
-  --events checkout.session.completed,customer.subscription.updated,customer.subscription.deleted,invoice.payment_failed
+  --events checkout.session.completed,customer.subscription.updated,customer.subscription.deleted,invoice.payment_failed,invoice.payment_succeeded
 ```
 
-The `--events` filter matches the four events Section D's webhook
-handler processes (Sprint 02 spec D4). Forwarding all events would also
+The `--events` filter matches the five events Section D's webhook
+handler processes (Sprint 02 spec D4 + the recovery-path
+`invoice.payment_succeeded` added in Section D Commit 1, which clears
+`past_due_since` when dunning succeeds). Forwarding all events would also
 work but produces noisier logs. Add events here when future sprints
 extend the handler.
 
@@ -191,6 +193,114 @@ This drift class also applies if Sprint 12 introduces separate live-mode
 price IDs — the handler matches against whichever Stripe environment
 issued the event, so test and live IDs must both be wired correctly per
 deployment environment.
+
+## Step 9 — Manual `'processed'` path smoke test
+
+`stripe trigger` (Step 6) is great for verifying the route handler accepts
+signed events and routes them to `process_stripe_event`, but it generates
+synthetic Stripe IDs that don't match any workspace in our DB. Every
+`stripe trigger` invocation lands as `outcome='workspace_not_found'` —
+the dispatch works, but the state-mutation path stays untested.
+
+This step exercises the full `'processed'` path: we forge a signed
+webhook with controlled IDs that match a real seeded workspace, then
+verify the workspace's `plan_tier` flips correctly.
+
+Prerequisite: local Supabase running (`supabase start`), `pnpm dev` up,
+`stripe listen` from Step 4 still forwarding (or stop it — this step
+POSTs directly to localhost, bypassing the CLI).
+
+```bash
+# Resolve local DB URL from supabase status (POSTGRES URL, not API URL).
+export DATABASE_URL=$(supabase status -o env | grep '^DB_URL=' | cut -d= -f2-)
+
+# 1. Identify a test workspace to mutate. Pick any row; if you don't have
+#    one, sign up via /sign-up first.
+psql "$DATABASE_URL" -c "
+  select id, slug, plan_tier, subscription_status
+  from public.workspaces
+  order by created_at desc
+  limit 5;
+"
+# Capture the workspace id of your choice into WS_ID below.
+export WS_ID=<paste-workspace-id-here>
+
+# 2. Seed stripe_price_tier_map with your real STRIPE_PRICE_SOLO from
+#    apps/web/.env.local. Substitute the actual price_... value below.
+export PRICE_ID=<paste-STRIPE_PRICE_SOLO-here>
+psql "$DATABASE_URL" -c "
+  insert into public.stripe_price_tier_map (stripe_price_id, plan_tier)
+  values ('$PRICE_ID', 'solo')
+  on conflict (stripe_price_id) do nothing;
+"
+
+# 3. Pre-link the workspace to a synthetic subscription_id. The webhook's
+#    subscription.updated branch resolves the workspace by this column.
+psql "$DATABASE_URL" -c "
+  update public.workspaces
+  set stripe_subscription_id = 'sub_smoke_test_001'
+  where id = '$WS_ID';
+"
+
+# 4. Forge a signed webhook payload using the stable webhook secret.
+SECRET=$(grep '^STRIPE_WEBHOOK_SECRET=' apps/web/.env.local | cut -d= -f2-)
+PERIOD_END=$(($(date +%s) + 30 * 86400))   # +30 days, unix seconds
+PAYLOAD=$(cat <<EOF
+{"id":"evt_smoke_test_001","object":"event","type":"customer.subscription.updated","livemode":false,"data":{"object":{"id":"sub_smoke_test_001","customer":"cus_smoke_test_001","items":{"data":[{"price":{"id":"$PRICE_ID"}}]},"current_period_end":$PERIOD_END}}}
+EOF
+)
+TS=$(date +%s)
+SIG=$(printf '%s.%s' "$TS" "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" -hex | awk '{print $2}')
+
+# 5. POST the signed payload to the webhook route.
+curl -i -X POST http://localhost:3000/api/webhooks/stripe \
+  -H 'Content-Type: application/json' \
+  -H "stripe-signature: t=${TS},v1=${SIG}" \
+  --data "$PAYLOAD"
+# Expect: HTTP 200 with body {"received":true,"outcome":"processed"}.
+
+# 6. Verify the state mutation landed.
+psql "$DATABASE_URL" -c "
+  select id, slug, plan_tier, subscription_status,
+         stripe_subscription_id, subscription_current_period_end
+  from public.workspaces where id = '$WS_ID';
+"
+# Expect: plan_tier='solo', subscription_status='active',
+# subscription_current_period_end set to ~30 days from now.
+
+# 7. Verify the event was recorded for forensics.
+psql "$DATABASE_URL" -c "
+  select event_id, type, processed_outcome, workspace_id
+  from public.stripe_events where event_id = 'evt_smoke_test_001';
+"
+# Expect: processed_outcome='processed', workspace_id matches WS_ID.
+
+# 8. Replay the same event to confirm dedup works.
+curl -i -X POST http://localhost:3000/api/webhooks/stripe \
+  -H 'Content-Type: application/json' \
+  -H "stripe-signature: t=${TS},v1=${SIG}" \
+  --data "$PAYLOAD"
+# Expect: HTTP 200 with body {"received":true,"outcome":"deduplicated"}.
+# (or {"received":true,"deduped":true} if the in-memory dedup catches it
+# before the DB layer — both mean replay handling worked.)
+```
+
+Cleanup (optional, leaves the seed in place for repeated runs):
+
+```bash
+psql "$DATABASE_URL" -c "
+  delete from public.stripe_events where event_id = 'evt_smoke_test_001';
+  update public.workspaces
+    set plan_tier='free', subscription_status='active',
+        stripe_subscription_id=null, subscription_current_period_end=null
+    where id = '$WS_ID';
+"
+```
+
+This procedure exercises everything `stripe trigger` can't reach: signature
+verification with the real webhook secret, the dispatch through
+`process_stripe_event`, the state mutation under the defensive
+`subscription_id` WHERE clause, and the persistent dedup on replay.
 
 ## Output checklist
 

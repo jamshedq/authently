@@ -49,6 +49,18 @@ The technical architecture treats them identically. Marketing and onboarding emp
 6. Service-role DB access is allowed only inside Trigger.dev tasks that explicitly assert workspace context.
 7. CI runs the RLS test suite on every PR; cross-tenant access tests must fail.
 
+## Database function naming convention
+
+Three categories of SECURITY DEFINER functions, distinguished by where they live and who can call them via PostgREST:
+
+- **`private.<name>`** — workers + RLS helpers. NOT HTTP-callable: PostgREST's `db-schemas` config only exposes `public` and `graphql_public` (verified empirically — adding `private` would let auth users probe `private.is_workspace_member(any_workspace_id)` for tenant enumeration). Used inside RLS policies (e.g. `private.is_workspace_member`) and as workers called by `public.*` wrappers (e.g. `private.ensure_workspace_for_user`, `private.process_stripe_event_impl`).
+
+- **`public.api_<name>`** — user-callable HTTP entry points. SECURITY DEFINER, granted to `authenticated`. Reads `auth.uid()` inside, dispatches to a `private.<name>` worker. Examples: `public.api_ensure_my_workspace`, `public.api_create_workspace`, `public.api_list_workspace_members`.
+
+- **`public.svc_<name>`** — service-role-only HTTP entry points. SECURITY DEFINER, granted to `service_role` only (revoked from `public, anon, authenticated`). Thin wrapper that delegates to a `private.<name>_impl` worker. Used by webhooks and Trigger.dev system tasks where there's no authenticated user. Examples: `public.svc_process_stripe_event`, `public.svc_find_workspaces_past_due_grace_expired`.
+
+When adding a new RPC, pick the right entry-point prefix. The wrapper-and-worker pattern matters even when the wrapper is a one-liner: it keeps the HTTP boundary discoverable, the GRANT perimeter local to the wrapper, and the worker's body free to be called from inside other DEFINER functions if needed. Tests live in `packages/db/tests/{rls,auth,billing}/` and must include a perimeter test for any new `public.*` function (auth/anon rejected with 42501).
+
 ## Coding rules
 
 - TypeScript strict everywhere. No `any` without a `// @ts-expect-error` comment explaining why.

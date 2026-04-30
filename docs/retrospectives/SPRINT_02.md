@@ -99,3 +99,124 @@ Test count and run-time grow with every section: Section A added 9 RLS tests, Se
 
 - Duplicate "Authently" header rendered on `/invite/[token]` pages — workspace layout bleeds through onto public routes that have their own header
 - "Wrong Account" page's primary CTA is "Account settings" instead of more useful "Sign out" — should offer the corrective action directly
+
+## Section D Commit 1 — design deviations from spec text
+
+### `past_due_since` column added; grace anchor changed (vs. spec D5)
+
+**Discovered:** Section D Commit 1 planning, 2026-04-30.
+
+The Sprint 02 spec D5 proposed anchoring the 7-day past-due grace period on
+`subscription_current_period_end < now() - interval '7 days'`. During
+implementation planning we replaced this with a new column,
+`workspaces.past_due_since timestamptz`, set by `process_stripe_event`
+when a subscription transitions into `past_due` and cleared on transition
+back to `active`. Grace task uses
+`past_due_since < now() - interval '7 days'`.
+
+**Why the deviation:**
+
+1. Stripe's smart retries (dunning) run for 1–4 weeks AFTER `period_end`
+   in many account configurations. Anchoring on `period_end` means we
+   could downgrade a workspace mid-dunning while Stripe is still actively
+   trying to collect.
+2. The re-entry case (workspace goes past_due → recovers → past_due again
+   in a later period) was load-bearing on the side effect of
+   `customer.subscription.updated` resetting `current_period_end`.
+   `past_due_since` makes the invariant direct.
+3. The recovery path (`invoice.payment_succeeded` clears `past_due_since`)
+   makes it trivial to express "how long has this customer actually been
+   past due?" — a question ops will ask repeatedly.
+
+**Impact:** schema cost is one nullable timestamp column on `workspaces`.
+Spec D5 text describing the predicate is now wrong; the migration header
+documents the deviation. The behavior still matches spec intent ("7 days
+of past_due → free"); only the anchor moved.
+
+**Approved:** by Jamshed during Section D Commit 1 planning, before any code
+was written.
+
+### `invoice.payment_succeeded` added to handled events (vs. spec D4)
+
+**Discovered:** Section D Commit 1 planning, 2026-04-30.
+
+Spec D4 listed four event types: `checkout.session.completed`,
+`customer.subscription.updated`, `customer.subscription.deleted`,
+`invoice.payment_failed`. Without a recovery-path handler, a successful
+dunning retry (Stripe's `invoice.payment_succeeded`) would leave
+`past_due_since` set indefinitely, and the grace task would downgrade a
+paying customer 7 days after their first payment failure even after
+they recovered.
+
+Added `invoice.payment_succeeded` as a fifth event:
+- If the workspace is currently `past_due` (i.e. `past_due_since IS NOT NULL`),
+  flip status to `active` and clear `past_due_since`.
+- If already active, no-op (idempotent for normal renewal payments).
+
+**Approved:** by Jamshed; runbook (`docs/runbooks/stripe-products.md`) and
+the `--events` filter argument were updated in the same commit.
+
+### Schema choice: billing RPCs — `private` workers + `public.svc_*` wrappers
+
+**Discovered:** Section D Commit 1 implementation, 2026-04-30.
+**Refactored:** before merge of section-d-commit-1, same day.
+
+Sprint 01 established `private` schema as the home for SECURITY DEFINER
+helpers. The convention was: `private` = never PostgREST-exposed; called
+only from inside RLS policies or from `public.api_*` wrappers.
+
+Commit 1 plan named the new RPCs as `private.process_stripe_event` etc.
+On implementation, the Stripe webhook handler (apps/web) and the
+Trigger.dev grace-period task (apps/jobs) are themselves PostgREST
+clients via `supabase-js`. Functions in `private` are not callable over
+HTTP at all — `db-schemas` in `supabase/config.toml` only exposes
+`public` and `graphql_public`. (Verified empirically: PostgREST returns
+`PGRST106 HTTP 406 "Invalid schema: private"` regardless of role,
+including service_role. The supabase-js `rpc()` method always goes
+through PostgREST; the service-role key grants RLS bypass + elevated
+privileges but does NOT bypass schema-exposure config.)
+
+Three options were on the table:
+- (a) Add `private` to `db-schemas` — would broaden the convention to
+  "exposed but role-gated," and would let authenticated users probe
+  `private.is_workspace_member(any_workspace_id)` (granted to
+  authenticated) for tenant-membership enumeration. Real security
+  regression. Rejected.
+- (b) Keep functions in `private`, add thin `public.svc_*` wrappers
+  granted to service_role only. Matches Sprint 01/02 precedent
+  (`public.api_ensure_my_workspace` → `private.ensure_workspace_for_user`).
+- (c) Place the new functions in `public` directly with GRANT-based
+  perimeter (`revoke from public, anon, authenticated; grant to
+  service_role`).
+
+**Initial implementation: (c).** Rationalized as "(b) is pure ceremony for
+service-role-only calls." The functions worked, tests verified the
+perimeter (anon/auth rejected with 42501), and a smoke test confirmed
+end-to-end behavior.
+
+**Pre-merge refactor to (b):** on review, (c) was a real architectural
+deviation. The Sprint 01/02 codebase pays the wrapper cost everywhere
+else (`public.api_ensure_my_workspace`, `public.api_create_workspace`,
+`public.api_list_workspace_members`, etc.). Breaking the pattern for
+four functions creates a second convention future Claude sessions have
+to learn. Pattern consistency is a long-term investment; the wrapper
+overhead is small. Migration `20260430231812_billing_rpc_pattern_refactor`
+drops the original `public.<name>` functions and recreates them as
+`private.<name>_impl` workers with `public.svc_<name>` thin wrappers.
+App code, tests, and the Trigger.dev task all switched to the
+`public.svc_<name>` entry points. No behavior change; all 25 billing
+tests + smoke verification still pass.
+
+The convention now reads:
+- `private.<name>` — not HTTP-callable (RLS helpers, internal workers
+  not needing a public surface)
+- `private.<name>_impl` + `public.svc_<name>` — service-role-only entry
+  points; the wrapper is the HTTP surface, the `_impl` is the worker
+  (e.g. `private.process_stripe_event_impl`,
+  `public.svc_process_stripe_event`)
+- `private.<name>` + `public.api_<name>` — user-callable entry points;
+  `public.api_<name>` runs `auth.uid()` + dispatches to the worker
+  (e.g. `private.ensure_workspace_for_user` + `public.api_ensure_my_workspace`)
+
+Documented in CLAUDE.md (project root) so the convention persists
+across sessions.

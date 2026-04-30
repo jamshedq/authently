@@ -39,11 +39,19 @@ const ServerEnvSchema = z.object({
   AXIOM_TOKEN: z.string().min(1).optional(),
   AXIOM_DATASET: z.string().min(1).optional(),
   // Stripe — both the webhook route and any outbound call refuse to start
-  // without these. Schema marks them optional because Sprint 01 doesn't
-  // require either; the webhook route surfaces a clear error when invoked
-  // without them set.
+  // without these. Schema marks them optional because the webhook route
+  // surfaces a clear error when invoked without them set, and code paths
+  // that don't touch Stripe (most of the app) shouldn't fail to boot just
+  // because billing isn't configured locally.
   STRIPE_SECRET_KEY: z.string().min(1).optional(),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  // Recurring price IDs for the Solo / Studio tiers. Webhook handler maps
+  // these to plan_tier values via stripe_price_tier_map (seeded lazily on
+  // first webhook invocation per process). See
+  // services/webhooks/stripe/price-tier-map.ts and
+  // docs/runbooks/stripe-products.md for the dev setup flow.
+  STRIPE_PRICE_SOLO: z.string().min(1).optional(),
+  STRIPE_PRICE_STUDIO: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof ServerEnvSchema>;
