@@ -76,6 +76,26 @@ export async function sendEmail(args: SendEmailArgs): Promise<SendEmailResult> {
       console.error(
         `[email:resend] failed status=${res.status} body=${body.slice(0, 200)}`,
       );
+      // ===== TODO(REMOVE BEFORE SECTION D) =====
+      // Dev smoke-test fallback. Resend's free tier rejects sends to
+      // addresses other than the account owner; when that happens here,
+      // dump the full email body to the dev server console so we can
+      // extract invitation links manually for multi-user testing. This
+      // intentionally logs the rendered HTML — DO NOT SHIP. Strip this
+      // block before starting Section D billing work.
+      console.info(
+        [
+          "===== [email:dev-fallback] BEGIN — Resend send failed; logging full body =====",
+          `to:      ${args.to}`,
+          `subject: ${args.subject}`,
+          "----- text -----",
+          args.text,
+          "----- html -----",
+          args.html,
+          "===== [email:dev-fallback] END =====",
+        ].join("\n"),
+      );
+      // ===== END TODO =====
       return { ok: false, error: `resend ${res.status}` };
     }
     return { ok: true };
