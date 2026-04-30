@@ -21,18 +21,28 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { safeNext } from "@/lib/auth/safe-next";
 import { SignUpForm } from "./sign-up-form";
 
 export const dynamic = "force-dynamic";
 
-export default async function SignUpPage() {
+type Props = {
+  searchParams: Promise<{ next?: string }>;
+};
+
+export default async function SignUpPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const next = safeNext(params.next ?? null);
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (user) {
-    redirect("/app");
+    redirect(next);
   }
+
+  const signInHref = `/login?next=${encodeURIComponent(next)}`;
 
   return (
     <div className="container">
@@ -48,11 +58,11 @@ export default async function SignUpPage() {
             Your workspace is created automatically.
           </p>
         </div>
-        <SignUpForm />
+        <SignUpForm next={next} />
         <p className="text-[14px] text-muted-foreground">
           Already have an account?{" "}
           <Link
-            href="/login"
+            href={signInHref}
             className="font-medium text-foreground transition hover:text-brand"
           >
             Sign in

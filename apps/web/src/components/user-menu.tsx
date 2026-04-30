@@ -18,18 +18,22 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Header user menu (Section A3 + Section B1). Avatar trigger drops a
-// dropdown of:
+// Header user menu (Section A3 + Section B1 + Section C). Avatar
+// trigger drops a dropdown of:
 //   - user info (name + email)
 //   - WORKSPACES label + list of memberships (current one check-marked)
 //   - "+ Create new workspace" → opens CreateWorkspaceDialog
+//   - "Workspace settings" + "Members" — only when in a workspace route
 //   - divider
 //   - "Account settings" link
 //   - "Sign out" item
 //
-// Section A fix preserved: sign-out (and "Create new workspace") use
+// Section A fix preserved: sign-out and "Create new workspace" use
 // onSelect rather than nested forms — Radix unmounts the dropdown on
-// close, which would cancel any in-flight form submission.
+// close, which would cancel any in-flight form submission. Section C's
+// new "Workspace settings" + "Members" entries use the asChild + Link
+// pattern (same as Account settings) — both are pure navigation, no
+// form to submit.
 //
 // The dialog state lives on this component (not inside DropdownMenuContent),
 // because Radix unmounts content on close. Opening the dialog from inside
@@ -179,6 +183,19 @@ export function UserMenu({ userId, email, fullName, memberships }: Props) {
               Create new workspace
             </span>
           </DropdownMenuItem>
+
+          {currentSlug ? (
+            <>
+              <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-3 py-2 text-[14px]">
+                <Link href={`/app/${currentSlug}/settings`}>
+                  Workspace settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-3 py-2 text-[14px]">
+                <Link href={`/app/${currentSlug}/members`}>Members</Link>
+              </DropdownMenuItem>
+            </>
+          ) : null}
 
           <DropdownMenuSeparator />
 

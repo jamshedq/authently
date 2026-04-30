@@ -36,6 +36,14 @@
 import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 
+// Force-dynamic rendering for the entire workspace tree. Section B
+// browser smoke testing surfaced a stale-Header bug after login/logout;
+// every page under /app/[slug]/* is auth-gated and inherently dynamic
+// anyway, so opting out of static rendering here is free, and it
+// pre-empts caching surprises in cookie-driven layouts on later
+// sections. (Tracked in docs/retrospectives/SPRINT_02.md.)
+export const dynamic = "force-dynamic";
+
 const LAST_WORKSPACE_COOKIE = "authently_last_workspace_slug";
 const THIRTY_DAYS_SECONDS = 60 * 60 * 24 * 30;
 

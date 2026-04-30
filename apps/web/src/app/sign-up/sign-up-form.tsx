@@ -27,7 +27,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-export function SignUpForm() {
+type Props = {
+  /**
+   * Path to redirect to after successful sign-up. Pre-validated by the
+   * server-side SignUpPage's safeNext().
+   */
+  next?: string;
+};
+
+export function SignUpForm({ next = "/app" }: Props) {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -55,7 +63,7 @@ export function SignUpForm() {
       if (signUpError) throw signUpError;
 
       router.refresh();
-      router.push("/app");
+      router.push(next);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Sign-up failed. Please try again.",

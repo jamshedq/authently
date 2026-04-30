@@ -27,7 +27,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-export function SignInForm() {
+type Props = {
+  /**
+   * Path to redirect to after successful sign-in. Pre-validated by the
+   * server-side LoginPage's safeNext() — this component trusts it.
+   * Defaults to /app when omitted.
+   */
+  next?: string;
+};
+
+export function SignInForm({ next = "/app" }: Props) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,9 +55,10 @@ export function SignInForm() {
       });
       if (signInError) throw signInError;
       // router.refresh() flushes any cached Server Component output before
-      // navigating; the post-auth landing then routes to the dashboard.
+      // navigating; the post-auth landing then routes to the dashboard
+      // (or the caller-supplied `next` path, e.g. /invite/[token]).
       router.refresh();
-      router.push("/app");
+      router.push(next);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Sign-in failed. Please try again.",

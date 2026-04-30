@@ -30,21 +30,14 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getServerEnv } from "@/lib/env";
+import { safeNext } from "@/lib/auth/safe-next";
 
 export const dynamic = "force-dynamic";
-
-// Only allow `next` to point inside our own app — never to another origin.
-// Defense against open-redirect attacks on the recovery link.
-function safeNext(rawNext: string | null): string {
-  if (!rawNext) return "/";
-  if (!rawNext.startsWith("/") || rawNext.startsWith("//")) return "/";
-  return rawNext;
-}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const next = safeNext(url.searchParams.get("next"));
+  const next = safeNext(url.searchParams.get("next"), "/");
   const env = getServerEnv();
   const origin = env.NEXT_PUBLIC_SITE_URL;
 
