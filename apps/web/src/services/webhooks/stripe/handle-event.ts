@@ -19,29 +19,90 @@
  */
 
 import type Stripe from "stripe";
+import {
+  extractEventFields,
+  isHandledType,
+} from "./extract-event-fields";
+import { ensurePriceTierMap } from "./price-tier-map";
+import { getWebhookSupabaseClient } from "./service-role-client";
 
 /**
- * Handle a Stripe webhook event. The route handler has already verified
- * the signature, so the event object is trusted; this function dispatches
- * on `event.type` to the appropriate domain handler.
- *
- * Sprint 01 ships this as an explicit no-op skeleton. Future sprints (S12+)
- * fill in the switch:
- *
- *   - checkout.session.completed         → mark workspace plan_tier
- *   - customer.subscription.created      → activate plan, link customer id
- *   - customer.subscription.updated      → reflect plan/status changes
- *   - customer.subscription.deleted      → downgrade workspace
- *   - invoice.paid                       → reset usage counters
- *   - invoice.payment_failed             → flag billing problem
- *
- * Throws are caught by the route handler and surface as a 500, which
- * causes Stripe to retry. Idempotency is the caller's responsibility (see
- * seen-events.ts for the in-process tracker; the persistent dedup table
- * arrives with billing logic).
+ * Outcome strings returned by public.process_stripe_event. Keep in sync
+ * with the function header in 20260430200155_billing_event_processor.sql.
  */
-export async function handleStripeEvent(_event: Stripe.Event): Promise<void> {
-  // Intentionally empty in S01 — the route logs the event type and id
-  // before calling this. Future code goes in a switch on `_event.type`.
-  return;
+export type ProcessOutcome =
+  | "processed"
+  | "deduplicated"
+  | "unknown_event_type"
+  | "unknown_price"
+  | "workspace_not_found"
+  | "subscription_mismatch";
+
+const VALID_OUTCOMES: ReadonlySet<ProcessOutcome> = new Set([
+  "processed",
+  "deduplicated",
+  "unknown_event_type",
+  "unknown_price",
+  "workspace_not_found",
+  "subscription_mismatch",
+]);
+
+/**
+ * Dispatch a verified Stripe.Event to public.process_stripe_event.
+ *
+ * The route handler has already verified the signature, so the event is
+ * trusted. This function:
+ *   1. Ensures the price-tier map is seeded for this process (idempotent).
+ *   2. Extracts the curated field set the RPC expects.
+ *   3. Calls public.process_stripe_event via service-role client.
+ *   4. Returns the outcome string for the caller to log.
+ *
+ * Events outside the handled set are skipped here without touching the DB —
+ * we don't want to flood stripe_events with `customer.created` or other
+ * forwarded events. The route's `--events` filter on `stripe listen`
+ * narrows the wire-level traffic; this is the second line of defence.
+ */
+export async function handleStripeEvent(
+  event: Stripe.Event,
+): Promise<ProcessOutcome | "skipped_unhandled_type"> {
+  if (!isHandledType(event.type)) {
+    return "skipped_unhandled_type";
+  }
+
+  await ensurePriceTierMap();
+
+  const extracted = extractEventFields(event);
+  const sb = getWebhookSupabaseClient();
+
+  // The supabase-js generated type treats all RPC args as non-null `string`,
+  // even when the underlying Postgres function declares them nullable (a
+  // known limitation of `supabase gen types`). Several of our args ARE
+  // legitimately nullable for event types that don't carry a value
+  // (e.g. invoice events have no `current_period_end`). Cast via `as never`
+  // to bypass — same workaround used by tests/rls/last-owner-protection.test.ts.
+  const { data, error } = await sb
+    .rpc("process_stripe_event", {
+      _event_id: extracted.event_id,
+      _type: extracted.type,
+      _payload: extracted.payload,
+      _customer_id: extracted.customer_id,
+      _subscription_id: extracted.subscription_id,
+      _price_id: extracted.price_id,
+      _workspace_id_hint: extracted.workspace_id_hint,
+      _current_period_end: extracted.current_period_end,
+    } as never);
+
+  if (error) {
+    throw new Error(
+      `public.process_stripe_event failed: ${error.message} (event_id=${extracted.event_id})`,
+    );
+  }
+
+  if (typeof data !== "string" || !VALID_OUTCOMES.has(data as ProcessOutcome)) {
+    throw new Error(
+      `public.process_stripe_event returned unexpected outcome: ${JSON.stringify(data)} (event_id=${extracted.event_id})`,
+    );
+  }
+
+  return data as ProcessOutcome;
 }
