@@ -99,3 +99,101 @@ Test count and run-time grow with every section: Section A added 9 RLS tests, Se
 
 - Duplicate "Authently" header rendered on `/invite/[token]` pages — workspace layout bleeds through onto public routes that have their own header
 - "Wrong Account" page's primary CTA is "Account settings" instead of more useful "Sign out" — should offer the corrective action directly
+
+## Section D Commit 1 — design deviations from spec text
+
+### `past_due_since` column added; grace anchor changed (vs. spec D5)
+
+**Discovered:** Section D Commit 1 planning, 2026-04-30.
+
+The Sprint 02 spec D5 proposed anchoring the 7-day past-due grace period on
+`subscription_current_period_end < now() - interval '7 days'`. During
+implementation planning we replaced this with a new column,
+`workspaces.past_due_since timestamptz`, set by `process_stripe_event`
+when a subscription transitions into `past_due` and cleared on transition
+back to `active`. Grace task uses
+`past_due_since < now() - interval '7 days'`.
+
+**Why the deviation:**
+
+1. Stripe's smart retries (dunning) run for 1–4 weeks AFTER `period_end`
+   in many account configurations. Anchoring on `period_end` means we
+   could downgrade a workspace mid-dunning while Stripe is still actively
+   trying to collect.
+2. The re-entry case (workspace goes past_due → recovers → past_due again
+   in a later period) was load-bearing on the side effect of
+   `customer.subscription.updated` resetting `current_period_end`.
+   `past_due_since` makes the invariant direct.
+3. The recovery path (`invoice.payment_succeeded` clears `past_due_since`)
+   makes it trivial to express "how long has this customer actually been
+   past due?" — a question ops will ask repeatedly.
+
+**Impact:** schema cost is one nullable timestamp column on `workspaces`.
+Spec D5 text describing the predicate is now wrong; the migration header
+documents the deviation. The behavior still matches spec intent ("7 days
+of past_due → free"); only the anchor moved.
+
+**Approved:** by Jamshed during Section D Commit 1 planning, before any code
+was written.
+
+### `invoice.payment_succeeded` added to handled events (vs. spec D4)
+
+**Discovered:** Section D Commit 1 planning, 2026-04-30.
+
+Spec D4 listed four event types: `checkout.session.completed`,
+`customer.subscription.updated`, `customer.subscription.deleted`,
+`invoice.payment_failed`. Without a recovery-path handler, a successful
+dunning retry (Stripe's `invoice.payment_succeeded`) would leave
+`past_due_since` set indefinitely, and the grace task would downgrade a
+paying customer 7 days after their first payment failure even after
+they recovered.
+
+Added `invoice.payment_succeeded` as a fifth event:
+- If the workspace is currently `past_due` (i.e. `past_due_since IS NOT NULL`),
+  flip status to `active` and clear `past_due_since`.
+- If already active, no-op (idempotent for normal renewal payments).
+
+**Approved:** by Jamshed; runbook (`docs/runbooks/stripe-products.md`) and
+the `--events` filter argument were updated in the same commit.
+
+### Schema choice: billing RPCs in `public`, not `private`
+
+**Discovered:** Section D Commit 1 implementation, 2026-04-30.
+
+Sprint 01 established `private` schema as the home for SECURITY DEFINER
+helpers. The convention was: `private` = never PostgREST-exposed; called
+only from inside RLS policies or from `public.api_*` wrappers.
+
+Commit 1 plan named the new RPCs as `private.process_stripe_event` etc.
+On implementation, the Stripe webhook handler (apps/web) and the
+Trigger.dev grace-period task (apps/jobs) are themselves PostgREST
+clients via `supabase-js`. Functions in `private` are not callable over
+HTTP at all — `db-schemas` in `supabase/config.toml` only exposes
+`public` and `graphql_public`.
+
+We had three options:
+- (a) Add `private` to `db-schemas` — broadens the convention to
+  "exposed but role-gated," weakening the original invariant.
+- (b) Keep functions in `private`, add thin `public.api_*` wrappers
+  — pure ceremony for service-role-only calls.
+- (c) Place the new functions in `public` directly with GRANT-based
+  perimeter (`revoke from public, anon, authenticated; grant to
+  service_role`).
+
+We picked (c). Rationale: the `private` convention is for functions that
+should NEVER be HTTP-callable (RLS helpers like `is_workspace_member`,
+or workers like `ensure_workspace_for_user` that only run from inside
+another `public.api_*`). Our functions ARE HTTP-callable — by the
+webhook handler — so the schema name should reflect that. The security
+perimeter is the GRANT, validated by
+`packages/db/tests/billing/process-stripe-event-rls.test.ts`.
+
+The convention now reads:
+- `private.*` — not HTTP-callable at all (RLS helpers, internal workers)
+- `public.*` with service-role-only GRANT — HTTP-callable, only by
+  webhook handler / scheduled tasks
+- `public.api_*` — HTTP-callable by authenticated users
+
+Migration headers (`20260430200155_billing_event_processor.sql`,
+`20260430200413_billing_grace_period.sql`) document this choice for
+future Claude sessions.
