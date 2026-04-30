@@ -78,7 +78,8 @@ export function getWebhookSupabaseClient(): WebhookSupabaseClient {
   cached = createClient<Database>(url, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  // Default schema stays 'public' (supabase-js default). The handle-event
-  // module calls our private RPCs via .schema('private').rpc(...).
+  // Default schema 'public'. The handle-event module calls public.svc_*
+  // wrappers (which delegate to private workers; see migration
+  // 20260430231812_billing_rpc_pattern_refactor for the pattern).
   return cached;
 }

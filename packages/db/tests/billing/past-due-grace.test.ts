@@ -59,7 +59,7 @@ async function setPastDue(
 
 async function findGraceExpired(admin: AuthentlyClient): Promise<string[]> {
   const { data, error } = await admin
-    .rpc("find_workspaces_past_due_grace_expired");
+    .rpc("svc_find_workspaces_past_due_grace_expired");
   if (error) throw new Error(`find_ RPC failed: ${error.message}`);
   return ((data ?? []) as Array<{ workspace_id: string }>).map(
     (r) => r.workspace_id,
@@ -71,7 +71,7 @@ async function downgrade(
   workspaceId: string,
 ): Promise<void> {
   const { error } = await admin.rpc(
-    "downgrade_workspace_to_free",
+    "svc_downgrade_workspace_to_free",
     { _workspace_id: workspaceId } as never,
   );
   if (error) throw new Error(`downgrade RPC failed: ${error.message}`);

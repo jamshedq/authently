@@ -68,7 +68,7 @@ export const billingGracePeriodTask = schedules.task({
     const sb = getJobsSupabaseClient();
 
     const { data, error } = await sb
-      .rpc("find_workspaces_past_due_grace_expired");
+      .rpc("svc_find_workspaces_past_due_grace_expired");
 
     if (error) {
       logger.error("find_workspaces_past_due_grace_expired failed", {
@@ -90,7 +90,7 @@ export const billingGracePeriodTask = schedules.task({
     for (const row of rows) {
       const workspaceId = row.workspace_id;
       const result = await sb
-        .rpc("downgrade_workspace_to_free", {
+        .rpc("svc_downgrade_workspace_to_free", {
           _workspace_id: workspaceId,
         } as never);
 

@@ -46,7 +46,7 @@ export function freshCustomerId(): string {
  */
 export async function seedPriceTierMap(admin: AuthentlyClient): Promise<void> {
   const { error } = await admin.rpc(
-    "upsert_stripe_price_tier_map",
+    "svc_upsert_stripe_price_tier_map",
     {
       _entries: [
         { stripe_price_id: TEST_PRICE_SOLO, plan_tier: "solo" },
@@ -123,7 +123,7 @@ export async function callProcessEvent(
   });
 
   const { data, error } = await admin
-    .rpc("process_stripe_event", {
+    .rpc("svc_process_stripe_event", {
       _event_id: event_id,
       _type: args.type,
       _payload: payload,

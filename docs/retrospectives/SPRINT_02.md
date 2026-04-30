@@ -156,9 +156,10 @@ Added `invoice.payment_succeeded` as a fifth event:
 **Approved:** by Jamshed; runbook (`docs/runbooks/stripe-products.md`) and
 the `--events` filter argument were updated in the same commit.
 
-### Schema choice: billing RPCs in `public`, not `private`
+### Schema choice: billing RPCs — `private` workers + `public.svc_*` wrappers
 
 **Discovered:** Section D Commit 1 implementation, 2026-04-30.
+**Refactored:** before merge of section-d-commit-1, same day.
 
 Sprint 01 established `private` schema as the home for SECURITY DEFINER
 helpers. The convention was: `private` = never PostgREST-exposed; called
@@ -169,31 +170,53 @@ On implementation, the Stripe webhook handler (apps/web) and the
 Trigger.dev grace-period task (apps/jobs) are themselves PostgREST
 clients via `supabase-js`. Functions in `private` are not callable over
 HTTP at all — `db-schemas` in `supabase/config.toml` only exposes
-`public` and `graphql_public`.
+`public` and `graphql_public`. (Verified empirically: PostgREST returns
+`PGRST106 HTTP 406 "Invalid schema: private"` regardless of role,
+including service_role. The supabase-js `rpc()` method always goes
+through PostgREST; the service-role key grants RLS bypass + elevated
+privileges but does NOT bypass schema-exposure config.)
 
-We had three options:
-- (a) Add `private` to `db-schemas` — broadens the convention to
-  "exposed but role-gated," weakening the original invariant.
-- (b) Keep functions in `private`, add thin `public.api_*` wrappers
-  — pure ceremony for service-role-only calls.
+Three options were on the table:
+- (a) Add `private` to `db-schemas` — would broaden the convention to
+  "exposed but role-gated," and would let authenticated users probe
+  `private.is_workspace_member(any_workspace_id)` (granted to
+  authenticated) for tenant-membership enumeration. Real security
+  regression. Rejected.
+- (b) Keep functions in `private`, add thin `public.svc_*` wrappers
+  granted to service_role only. Matches Sprint 01/02 precedent
+  (`public.api_ensure_my_workspace` → `private.ensure_workspace_for_user`).
 - (c) Place the new functions in `public` directly with GRANT-based
   perimeter (`revoke from public, anon, authenticated; grant to
   service_role`).
 
-We picked (c). Rationale: the `private` convention is for functions that
-should NEVER be HTTP-callable (RLS helpers like `is_workspace_member`,
-or workers like `ensure_workspace_for_user` that only run from inside
-another `public.api_*`). Our functions ARE HTTP-callable — by the
-webhook handler — so the schema name should reflect that. The security
-perimeter is the GRANT, validated by
-`packages/db/tests/billing/process-stripe-event-rls.test.ts`.
+**Initial implementation: (c).** Rationalized as "(b) is pure ceremony for
+service-role-only calls." The functions worked, tests verified the
+perimeter (anon/auth rejected with 42501), and a smoke test confirmed
+end-to-end behavior.
+
+**Pre-merge refactor to (b):** on review, (c) was a real architectural
+deviation. The Sprint 01/02 codebase pays the wrapper cost everywhere
+else (`public.api_ensure_my_workspace`, `public.api_create_workspace`,
+`public.api_list_workspace_members`, etc.). Breaking the pattern for
+four functions creates a second convention future Claude sessions have
+to learn. Pattern consistency is a long-term investment; the wrapper
+overhead is small. Migration `20260430231812_billing_rpc_pattern_refactor`
+drops the original `public.<name>` functions and recreates them as
+`private.<name>_impl` workers with `public.svc_<name>` thin wrappers.
+App code, tests, and the Trigger.dev task all switched to the
+`public.svc_<name>` entry points. No behavior change; all 25 billing
+tests + smoke verification still pass.
 
 The convention now reads:
-- `private.*` — not HTTP-callable at all (RLS helpers, internal workers)
-- `public.*` with service-role-only GRANT — HTTP-callable, only by
-  webhook handler / scheduled tasks
-- `public.api_*` — HTTP-callable by authenticated users
+- `private.<name>` — not HTTP-callable (RLS helpers, internal workers
+  not needing a public surface)
+- `private.<name>_impl` + `public.svc_<name>` — service-role-only entry
+  points; the wrapper is the HTTP surface, the `_impl` is the worker
+  (e.g. `private.process_stripe_event_impl`,
+  `public.svc_process_stripe_event`)
+- `private.<name>` + `public.api_<name>` — user-callable entry points;
+  `public.api_<name>` runs `auth.uid()` + dispatches to the worker
+  (e.g. `private.ensure_workspace_for_user` + `public.api_ensure_my_workspace`)
 
-Migration headers (`20260430200155_billing_event_processor.sql`,
-`20260430200413_billing_grace_period.sql`) document this choice for
-future Claude sessions.
+Documented in CLAUDE.md (project root) so the convention persists
+across sessions.

@@ -27,7 +27,7 @@ import { ensurePriceTierMap } from "./price-tier-map";
 import { getWebhookSupabaseClient } from "./service-role-client";
 
 /**
- * Outcome strings returned by public.process_stripe_event. Keep in sync
+ * Outcome strings returned by public.svc_process_stripe_event. Keep in sync
  * with the function header in 20260430200155_billing_event_processor.sql.
  */
 export type ProcessOutcome =
@@ -48,13 +48,13 @@ const VALID_OUTCOMES: ReadonlySet<ProcessOutcome> = new Set([
 ]);
 
 /**
- * Dispatch a verified Stripe.Event to public.process_stripe_event.
+ * Dispatch a verified Stripe.Event to public.svc_process_stripe_event.
  *
  * The route handler has already verified the signature, so the event is
  * trusted. This function:
  *   1. Ensures the price-tier map is seeded for this process (idempotent).
  *   2. Extracts the curated field set the RPC expects.
- *   3. Calls public.process_stripe_event via service-role client.
+ *   3. Calls public.svc_process_stripe_event via service-role client.
  *   4. Returns the outcome string for the caller to log.
  *
  * Events outside the handled set are skipped here without touching the DB —
@@ -81,7 +81,7 @@ export async function handleStripeEvent(
   // (e.g. invoice events have no `current_period_end`). Cast via `as never`
   // to bypass — same workaround used by tests/rls/last-owner-protection.test.ts.
   const { data, error } = await sb
-    .rpc("process_stripe_event", {
+    .rpc("svc_process_stripe_event", {
       _event_id: extracted.event_id,
       _type: extracted.type,
       _payload: extracted.payload,
@@ -94,13 +94,13 @@ export async function handleStripeEvent(
 
   if (error) {
     throw new Error(
-      `public.process_stripe_event failed: ${error.message} (event_id=${extracted.event_id})`,
+      `public.svc_process_stripe_event failed: ${error.message} (event_id=${extracted.event_id})`,
     );
   }
 
   if (typeof data !== "string" || !VALID_OUTCOMES.has(data as ProcessOutcome)) {
     throw new Error(
-      `public.process_stripe_event returned unexpected outcome: ${JSON.stringify(data)} (event_id=${extracted.event_id})`,
+      `public.svc_process_stripe_event returned unexpected outcome: ${JSON.stringify(data)} (event_id=${extracted.event_id})`,
     );
   }
 

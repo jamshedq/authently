@@ -45,9 +45,19 @@ export type Database = {
         Args: { _name: string; _user_id: string }
         Returns: string
       }
+      downgrade_workspace_to_free_impl: {
+        Args: { _workspace_id: string }
+        Returns: undefined
+      }
       ensure_workspace_for_user: {
         Args: { _base_name: string; _email: string; _user_id: string }
         Returns: string
+      }
+      find_workspaces_past_due_grace_expired_impl: {
+        Args: never
+        Returns: {
+          workspace_id: string
+        }[]
       }
       generate_workspace_slug: { Args: { _base: string }; Returns: string }
       has_workspace_role: {
@@ -55,7 +65,24 @@ export type Database = {
         Returns: boolean
       }
       is_workspace_member: { Args: { _workspace_id: string }; Returns: boolean }
+      process_stripe_event_impl: {
+        Args: {
+          _current_period_end: string
+          _customer_id: string
+          _event_id: string
+          _payload: Json
+          _price_id: string
+          _subscription_id: string
+          _type: string
+          _workspace_id_hint: string
+        }
+        Returns: string
+      }
       slugify: { Args: { _input: string }; Returns: string }
+      upsert_stripe_price_tier_map_impl: {
+        Args: { _entries: Json }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
@@ -313,17 +340,17 @@ export type Database = {
         Args: { _invitation_id: string }
         Returns: undefined
       }
-      downgrade_workspace_to_free: {
+      svc_downgrade_workspace_to_free: {
         Args: { _workspace_id: string }
         Returns: undefined
       }
-      find_workspaces_past_due_grace_expired: {
+      svc_find_workspaces_past_due_grace_expired: {
         Args: never
         Returns: {
           workspace_id: string
         }[]
       }
-      process_stripe_event: {
+      svc_process_stripe_event: {
         Args: {
           _current_period_end: string
           _customer_id: string
@@ -336,7 +363,7 @@ export type Database = {
         }
         Returns: string
       }
-      upsert_stripe_price_tier_map: {
+      svc_upsert_stripe_price_tier_map: {
         Args: { _entries: Json }
         Returns: number
       }

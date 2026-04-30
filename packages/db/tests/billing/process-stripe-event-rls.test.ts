@@ -67,7 +67,7 @@ describe("process_stripe_event security perimeter", () => {
     const eventId = freshEventId();
     const subscriptionId = freshSubscriptionId();
     const result = await userClient
-      .rpc("process_stripe_event", {
+      .rpc("svc_process_stripe_event", {
         _event_id: eventId,
         _type: "checkout.session.completed",
         _payload: buildTestPayload({
@@ -105,7 +105,7 @@ describe("process_stripe_event security perimeter", () => {
     const anon = createAnonClient();
     const eventId = freshEventId();
 
-    const result = await anon.rpc("process_stripe_event", {
+    const result = await anon.rpc("svc_process_stripe_event", {
       _event_id: eventId,
       _type: "checkout.session.completed",
       _payload: buildTestPayload({
@@ -133,11 +133,11 @@ describe("process_stripe_event security perimeter", () => {
     const userClient = createAuthenticatedClient(owner.accessToken);
 
     const findResult = await userClient
-      .rpc("find_workspaces_past_due_grace_expired");
+      .rpc("svc_find_workspaces_past_due_grace_expired");
     expect(findResult.error).not.toBeNull();
 
     const downgradeResult = await userClient
-      .rpc("downgrade_workspace_to_free", {
+      .rpc("svc_downgrade_workspace_to_free", {
         _workspace_id: owner.workspaceId,
       } as never);
     expect(downgradeResult.error).not.toBeNull();
@@ -151,7 +151,7 @@ describe("process_stripe_event security perimeter", () => {
     const subscriptionId = freshSubscriptionId();
 
     const result = await admin
-      .rpc("process_stripe_event", {
+      .rpc("svc_process_stripe_event", {
         _event_id: eventId,
         _type: "checkout.session.completed",
         _payload: buildTestPayload({

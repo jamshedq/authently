@@ -30,7 +30,7 @@ import { getWebhookSupabaseClient } from "./service-role-client";
  *   STRIPE_PRICE_STUDIO  → plan_tier = 'studio'
  *
  * On webhook handler cold-start, we upsert these into the table once via
- * public.upsert_stripe_price_tier_map, then memoize a "done" flag to skip
+ * public.svc_upsert_stripe_price_tier_map, then memoize a "done" flag to skip
  * the work on subsequent invocations within the same Vercel function
  * instance. If the env vars are unset, ensurePriceTierMap throws — the
  * webhook would otherwise process events but record 'unknown_price' for
@@ -61,7 +61,7 @@ export async function ensurePriceTierMap(): Promise<void> {
   }
 
   const sb = getWebhookSupabaseClient();
-  const { error } = await sb.rpc("upsert_stripe_price_tier_map", {
+  const { error } = await sb.rpc("svc_upsert_stripe_price_tier_map", {
     _entries: [
       { stripe_price_id: solo, plan_tier: "solo" },
       { stripe_price_id: studio, plan_tier: "studio" },
@@ -70,7 +70,7 @@ export async function ensurePriceTierMap(): Promise<void> {
 
   if (error) {
     throw new Error(
-      `public.upsert_stripe_price_tier_map failed: ${error.message}`,
+      `public.svc_upsert_stripe_price_tier_map failed: ${error.message}`,
     );
   }
 
