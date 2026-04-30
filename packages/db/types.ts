@@ -95,6 +95,59 @@ export type Database = {
           },
         ]
       }
+      stripe_events: {
+        Row: {
+          event_id: string
+          payload: Json
+          processed_outcome: string | null
+          received_at: string
+          type: string
+          workspace_id: string | null
+        }
+        Insert: {
+          event_id: string
+          payload: Json
+          processed_outcome?: string | null
+          received_at?: string
+          type: string
+          workspace_id?: string | null
+        }
+        Update: {
+          event_id?: string
+          payload?: Json
+          processed_outcome?: string | null
+          received_at?: string
+          type?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_price_tier_map: {
+        Row: {
+          created_at: string
+          plan_tier: string
+          stripe_price_id: string
+        }
+        Insert: {
+          created_at?: string
+          plan_tier: string
+          stripe_price_id: string
+        }
+        Update: {
+          created_at?: string
+          plan_tier?: string
+          stripe_price_id?: string
+        }
+        Relationships: []
+      }
       workspace_invitations: {
         Row: {
           accepted_at: string | null
@@ -173,10 +226,13 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          past_due_since: string | null
           plan_tier: string
           slug: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          subscription_current_period_end: string | null
+          subscription_status: string
           template: string
           updated_at: string
         }
@@ -184,10 +240,13 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          past_due_since?: string | null
           plan_tier?: string
           slug: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_current_period_end?: string | null
+          subscription_status?: string
           template?: string
           updated_at?: string
         }
@@ -195,10 +254,13 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          past_due_since?: string | null
           plan_tier?: string
           slug?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_current_period_end?: string | null
+          subscription_status?: string
           template?: string
           updated_at?: string
         }
@@ -250,6 +312,33 @@ export type Database = {
       api_revoke_invitation: {
         Args: { _invitation_id: string }
         Returns: undefined
+      }
+      downgrade_workspace_to_free: {
+        Args: { _workspace_id: string }
+        Returns: undefined
+      }
+      find_workspaces_past_due_grace_expired: {
+        Args: never
+        Returns: {
+          workspace_id: string
+        }[]
+      }
+      process_stripe_event: {
+        Args: {
+          _current_period_end: string
+          _customer_id: string
+          _event_id: string
+          _payload: Json
+          _price_id: string
+          _subscription_id: string
+          _type: string
+          _workspace_id_hint: string
+        }
+        Returns: string
+      }
+      upsert_stripe_price_tier_map: {
+        Args: { _entries: Json }
+        Returns: number
       }
     }
     Enums: {
