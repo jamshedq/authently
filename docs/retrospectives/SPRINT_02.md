@@ -87,3 +87,15 @@ Test count and run-time grow with every section: Section A added 9 RLS tests, Se
 3. Move email-flow tests (`tests/auth/password-reset.test.ts` + future invitation-email tests) to a tagged "needs-mailpit" group that can be skipped when Mailpit's container isn't available.
 
 **When:** Sprint 12 prep, or sooner if any single CI run starts to clear 5 minutes. **Not urgent.**
+
+## Section C smoke test findings (verified end-to-end)
+
+- Multi-tenant invitation flow works correctly through anonymous → sign-up → accept paths
+- Email mismatch detection works (anti-enumeration with masked email hint)
+- Last-owner UI protection verified with helpful tooltip; DB trigger is the security floor
+- Resend free tier rejected non-owner emails (403). Workaround: dev-fallback `console.info` logs full email body. **Tracked as removal item before Section D ships.**
+
+## Cosmetic UX issues found in Section C smoke test (defer to polish sprint)
+
+- Duplicate "Authently" header rendered on `/invite/[token]` pages — workspace layout bleeds through onto public routes that have their own header
+- "Wrong Account" page's primary CTA is "Account settings" instead of more useful "Sign out" — should offer the corrective action directly
