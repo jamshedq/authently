@@ -24,7 +24,7 @@
 //     admins, cannot promote to admin, and cannot touch owners.
 //   - Editor / viewer cannot change roles at all (gated at the API
 //     layer via withMembership({ requireRole: ['owner', 'admin'] })).
-//   - Owner role assignment is reserved for the Sprint 03 transfer
+//   - Owner role assignment is reserved for the ownership transfer
 //     flow; the zod AssignableMemberRoleSchema disallows 'owner'.
 //
 // This service applies the actor-role gate before mutating. The DB-side
@@ -71,7 +71,7 @@ export async function updateMemberRole(
     }
   } else if (actorRole === "owner") {
     // Owners can re-assign any non-owner role; promoting/demoting
-    // owners themselves is the Sprint 03 transfer flow. Block here.
+    // owners themselves is the ownership transfer flow (Sprint 04 A2). Block here.
     if (target.role === "owner") {
       throw new ForbiddenError();
     }

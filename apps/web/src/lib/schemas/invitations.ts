@@ -20,8 +20,8 @@
 
 // Section C zod schemas. Bounds align with the DB layer:
 //   - role: 'admin' | 'editor' | 'viewer' (mirrors the CHECK on
-//     workspace_invitations.role; owner is NOT invitable — Sprint 03
-//     transfer-ownership flow handles owner assignment)
+//     workspace_invitations.role; owner is NOT invitable — the
+//     ownership transfer flow handles owner assignment)
 //   - email: lowercased + trimmed, then RFC-validated; the DB column is
 //     citext so case-insensitive equality is preserved either way
 

@@ -34,6 +34,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { DeleteWorkspaceButton } from "@/components/delete-workspace-button";
+import { InitiateTransferButton } from "@/components/initiate-transfer-button";
+import type { TransferCandidate } from "@/components/initiate-transfer-dialog";
+import { TransferStatusBlock } from "@/components/transfer-status-block";
 import { WorkspaceSettingsForm } from "@/components/workspace-settings-form";
 import { CheckoutRedirectToast } from "@/components/billing/checkout-redirect-toast";
 import { ManageBillingButton } from "@/components/billing/manage-billing-button";
@@ -41,6 +44,7 @@ import { UpgradeButton } from "@/components/billing/upgrade-button";
 import { formatGracePeriodLabel } from "@/lib/billing/grace-period";
 import { requireMembership } from "@/lib/api/require-membership";
 import { getWorkspaceForSettings } from "@/services/workspaces/get-workspace-for-settings";
+import { listWorkspaceMembers } from "@/services/members/list-members";
 
 export const dynamic = "force-dynamic";
 
@@ -65,13 +69,40 @@ export default async function WorkspaceSettingsPage({
   params: Promise<{ workspaceSlug: string }>;
 }) {
   const { workspaceSlug } = await params;
-  const { supabase, workspace, role } = await requireMembership(workspaceSlug, {
-    roles: ["owner", "admin"],
-  });
+  const { supabase, workspace, role, user } = await requireMembership(
+    workspaceSlug,
+    { roles: ["owner", "admin"] },
+  );
 
   const stats = await getWorkspaceForSettings(supabase, workspace.id);
   const planLabel = PLAN_LABELS[workspace.planTier] ?? workspace.planTier;
   const isOwner = role === "owner";
+
+  // Sprint 04 A2 — pending-transfer state for the danger zone. The
+  // TransferStatusBlock self-fetches the full row; we just need the
+  // boolean here to gate the "Transfer ownership" button.
+  const { data: pendingTransfer } = await supabase
+    .from("workspace_ownership_transfers")
+    .select("id")
+    .eq("workspace_id", workspace.id)
+    .is("accepted_at", null)
+    .is("cancelled_at", null)
+    .maybeSingle<{ id: string }>();
+  const hasPendingTransfer = pendingTransfer !== null;
+
+  // Candidate list for the initiate dialog — non-owner members only.
+  // Cheap server-side fetch; the dialog is owner-only and rarely opens.
+  const allMembers = isOwner
+    ? await listWorkspaceMembers(supabase, workspaceSlug)
+    : [];
+  const transferCandidates: TransferCandidate[] = allMembers
+    .filter((m) => m.role !== "owner")
+    .map((m) => ({
+      userId: m.userId,
+      email: m.email,
+      fullName: m.fullName,
+      role: m.role as TransferCandidate["role"],
+    }));
 
   return (
     <main className="container max-w-2xl py-12">
@@ -190,13 +221,20 @@ export default async function WorkspaceSettingsPage({
           />
         </section>
 
+        <TransferStatusBlock
+          workspaceSlug={workspace.slug}
+          workspaceId={workspace.id}
+          currentUserId={user.id}
+          supabase={supabase}
+        />
+
         <section className="space-y-3">
           <h2 className="text-[18px] font-medium tracking-[-0.18px] text-foreground">
             Danger zone
           </h2>
           <p className="text-[13px] text-muted-foreground">
             {isOwner
-              ? "Deleting the workspace removes access for all members. Ownership transfer ships in a future release."
+              ? "Deleting the workspace removes access for all members. Transferring ownership demotes you to admin once the new owner accepts."
               : "Only the workspace owner can delete this workspace or transfer ownership."}
           </p>
           <TooltipProvider delayDuration={150}>
@@ -221,18 +259,26 @@ export default async function WorkspaceSettingsPage({
                 </Tooltip>
               )}
               {isOwner ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span tabIndex={0}>
-                      <Button variant="ghost" disabled>
-                        Transfer ownership
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Available in a future release.
-                  </TooltipContent>
-                </Tooltip>
+                hasPendingTransfer ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0}>
+                        <Button variant="ghost" disabled>
+                          Transfer ownership
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      A transfer is already pending. Cancel it first.
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <InitiateTransferButton
+                    workspaceSlug={workspace.slug}
+                    workspaceName={workspace.name}
+                    candidates={transferCandidates}
+                  />
+                )
               ) : null}
             </div>
           </TooltipProvider>

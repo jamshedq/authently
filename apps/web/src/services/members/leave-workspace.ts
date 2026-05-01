@@ -47,7 +47,7 @@ export async function leaveWorkspace(
       throw new AppError({
         code: "LAST_OWNER",
         message:
-          "You're the last owner. Transfer ownership before leaving (available in Sprint 03).",
+          "You're the last owner. Transfer ownership before leaving — see Workspace settings.",
         statusCode: 409,
       });
     }

@@ -36,6 +36,7 @@
 import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import { PastDueBanner } from "@/components/billing/past-due-banner";
+import { TransferOfferBanner } from "@/components/transfer-offer-banner";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { typedRpc } from "@/lib/supabase/typed-rpc";
 
@@ -90,6 +91,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
   return (
     <>
       <PastDueBanner workspaceSlug={workspaceSlug} />
+      <TransferOfferBanner workspaceSlug={workspaceSlug} />
       {children}
     </>
   );

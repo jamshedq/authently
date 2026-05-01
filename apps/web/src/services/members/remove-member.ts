@@ -27,7 +27,7 @@
 // update-member-role.ts):
 //   - Admins cannot remove other admins or owners.
 //   - Owners can remove any non-owner; owner-vs-owner removal is the
-//     Sprint 03 transfer flow.
+//     ownership transfer flow (Sprint 04 A2).
 
 import {
   AppError,
@@ -61,7 +61,7 @@ export async function removeMember(
     }
   } else if (actorRole === "owner") {
     if (target.role === "owner") {
-      // Sprint 03 transfer-ownership flow handles owner removals.
+      // Ownership transfer flow (Sprint 04 A2) handles owner removals.
       throw new ForbiddenError();
     }
   } else {
