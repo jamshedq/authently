@@ -25,6 +25,30 @@
 #
 # Sprint 12 launch-prep items remain [DEFERRED] in SPRINT_02.md (real support
 # email, README Self-hosting section, real wordmark, real pricing decisions).
+#
+# === Sprint 04+ tech-debt routed by A3-followup (2026-05-01) ===
+# Surfaced when grepping `as never` after A3 landed. NOT fixed by typedRpc /
+# typedUpdate; require their own follow-ups:
+#
+# 1. supabase-gen-types nullability gap on RPC arg types
+#    Site: apps/web/src/services/webhooks/stripe/handle-event.ts:99
+#    Bug: `supabase gen types` strips nullability from RPC argument types.
+#    The webhook handler legitimately passes `null` for fields an event type
+#    doesn't carry (e.g. invoice events have no current_period_end), but the
+#    generated Args type marks every field as non-null. Cast with `as never`
+#    to bypass.
+#    Fix options: (a) upstream fix in `supabase gen types`; or (b) a
+#    `typedRpcWithNullable` helper that accepts `Partial<FnArgs<T>>` /
+#    relaxes the args type. Sprint 04+ when there's a second case to
+#    motivate the helper.
+#
+# 2. typedInsert helper for .insert({...} as never) cases
+#    Site: apps/web/src/services/invitations/create-invitation.ts:76
+#    Bug: bytea binary insertion uses the wire-protocol shape `\x<hex>`
+#    string, which doesn't match the generated Insert type for
+#    `workspace_invitations.token_hash`. Cast bypasses the type error.
+#    Fix: a `typedInsert<T extends TableName>(client, table, body)` helper
+#    paralleling typedUpdate. Defer until a second binary-insert site exists.
 
 5:Sprint 03 lives at `docs/specs/SPRINT_03_carryovers.md`.
 9:tech debt in Sprint 03 or for Sprint 12 launch prep.
