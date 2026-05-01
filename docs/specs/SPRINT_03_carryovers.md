@@ -60,6 +60,19 @@
 #    and passing the membership context to PastDueBanner via props would
 #    save 2-3 DB queries per workspace render. Naturally pairs with other
 #    layout-render optimizations later (post-Sprint-03; not blocking).
+#
+# === Sprint 02 lingering (surfaced during Sprint 04 A1 pre-flight, 2026-05-01) ===
+#
+# 1. public.smoke_test table still in-tree despite S02 drop intent
+#    Site: packages/db/migrations/20260428000001_init.sql:145
+#    The init.sql header comment reads "S01-only RLS validation table;
+#    dropped in S02" — but no drop migration shipped during Sprint 02. The
+#    table still exists, gated by `private.is_workspace_member`, so it
+#    inherits the Sprint 04 A1 soft-delete cascade automatically (no
+#    behavioral concern). But keeping a Sprint 01-only test fixture
+#    around is dead weight.
+#    Fix: add a drop migration in a future cleanup commit.
+#    When: not blocking; pair with another DB cleanup pass.
 
 5:Sprint 03 lives at `docs/specs/SPRINT_03_carryovers.md`.
 9:tech debt in Sprint 03 or for Sprint 12 launch prep.
