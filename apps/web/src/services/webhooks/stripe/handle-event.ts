@@ -19,6 +19,7 @@
  */
 
 import type Stripe from "stripe";
+import { enrichEventForExtraction } from "./enrich-event";
 import {
   extractEventFields,
   isHandledType,
@@ -71,7 +72,12 @@ export async function handleStripeEvent(
 
   await ensurePriceTierMap();
 
-  const extracted = extractEventFields(event);
+  // checkout.session.completed events arrive without line_items expanded;
+  // enrichEventForExtraction fetches the session with line_items so the
+  // price_id is available to extractEventFields. All other event types pass
+  // through unchanged.
+  const enriched = await enrichEventForExtraction(event);
+  const extracted = extractEventFields(enriched);
   const sb = getWebhookSupabaseClient();
 
   // The supabase-js generated type treats all RPC args as non-null `string`,

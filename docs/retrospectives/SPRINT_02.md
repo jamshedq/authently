@@ -354,3 +354,109 @@ SQL-level invariant checks that `svc_*` wrappers can enforce. The
 column is currently null before writing — preventing accidental
 double-create of Stripe customers if a future code path triggers a
 second pre-creation.
+
+### Manual smoke caught a real bug that integration tests missed
+
+**Discovered:** Section D Commit 2 manual smoke test, 2026-05-01.
+
+The first real end-to-end Stripe Checkout completion against a real
+workspace surfaced a chicken-and-egg deadlock between
+`checkout.session.completed` and the subscription/invoice events that
+follow it. All 31 billing integration tests passed; manual smoke caught
+it at Phase 5.
+
+**Symptom (from `stripe_events.payload` after a real checkout):**
+
+| Event | `price_id` | `subscription_id` | `workspace_id_hint` | Outcome |
+|---|---|---|---|---|
+| `checkout.session.completed` | `null` | `sub_…` | `27f06054-…` (correct) | `unknown_price` |
+| `customer.subscription.updated` | `price_…` (correct) | `sub_…` | `null` | `workspace_not_found` |
+| `invoice.payment_succeeded` | `price_…` | `sub_…` | `null` | `workspace_not_found` |
+
+**Root cause:**
+
+1. Stripe webhook events for `checkout.session.completed` do NOT include
+   `line_items` by default — populating `price_id` requires an explicit
+   `expand` on the API.
+2. The Sprint 02 D Commit 1 extractor read `obj["line_items"]` directly
+   off the event payload (which was always `undefined` for real
+   webhooks) → `price_id: null` → RPC returned `unknown_price` → the
+   workspace's `stripe_subscription_id` stayed NULL.
+3. The follow-up `customer.subscription.updated` event has the price
+   correctly, but the RPC's resolver only tried to find the workspace
+   by `stripe_subscription_id`. Since step 2 left it NULL,
+   `workspace_not_found` fired even though we knew the customer.
+4. `invoice.payment_succeeded` repeated step 3.
+
+The integration tests for these branches passed because they pre-populated
+`workspace_id_hint`/`price_id`/`subscription_id` from hand-crafted
+payloads; they never went through the real
+`stripe.checkout.sessions.retrieve` round-trip and never exercised the
+"checkout.session.completed dropped, recovery event arrives" sequence.
+
+**Two-pronged fix** (one PR commit on `section-d-commit-2`):
+
+1. **`apps/web/src/services/webhooks/stripe/enrich-event.ts`** — new
+   helper. Before extraction, calls
+   `stripe.checkout.sessions.retrieve(id, { expand: ['line_items'] })`
+   for `checkout.session.completed` events. Returns the event with
+   `data.object` replaced by the expanded session. All other event
+   types pass through unchanged. One Stripe API call per checkout
+   completion, acceptable cost.
+
+2. **`packages/db/migrations/20260501025654_billing_customer_id_fallback.sql`** —
+   defense in depth. The four subscription-bound branches in
+   `private.process_stripe_event_impl`
+   (`customer.subscription.updated`, `customer.subscription.deleted`,
+   `invoice.payment_failed`, `invoice.payment_succeeded`) now fall back
+   to a `stripe_customer_id` lookup if the primary
+   `stripe_subscription_id` lookup misses, **guarded by**
+   `stripe_subscription_id IS NULL`. The guard prevents accidentally
+   matching a workspace already linked to a different active
+   subscription. When fallback resolves, the UPDATE links
+   `stripe_subscription_id` so subsequent events for the same
+   subscription resolve via the primary path.
+
+The line_items expansion fixes the root cause; the customer_id fallback
+is for production edge cases (manual Stripe Dashboard actions,
+out-of-order events, admin-driven subscription changes) where the same
+deadlock could re-emerge.
+
+**Third bug surfaced during the post-fix smoke run** — the
+`stripe.checkout.sessions.retrieve` round-trip in (1) is slower than
+the synchronous parse of `customer.subscription.updated`, so on the
+real wire the UPDATE for the subscription event fires *before* the
+UPDATE for the checkout event. The `customer_id` fallback from (2) made
+the subscription event's UPDATE succeed (sets `period_end` correctly),
+but `checkout.session.completed` then ran second and clobbered
+`period_end = null` (the extractor doesn't populate `current_period_end`
+for checkout sessions — that field is only on the subscription).
+
+Fixed in the same migration by changing the checkout branch's UPDATE to
+`subscription_current_period_end = coalesce(_current_period_end, subscription_current_period_end)`.
+Test in `packages/db/tests/billing/customer-id-fallback.test.ts`
+("checkout.session.completed with null _current_period_end → preserves
+existing period_end") replays the race in the deterministic order.
+
+**Pattern lesson — second confirmation in Sprint 02:**
+
+Sprint 02 has now had two cases where exhaustive integration tests
+passed but manual smoke caught real bugs:
+
+1. **Section A** — Radix DropdownMenu sign-out race. Component tests
+   passed; clicking sign-out in a real browser failed.
+2. **Section D Commit 2** — this entry. 31 billing tests passed;
+   running real Stripe Checkout end-to-end deadlocked.
+
+The pattern is consistent: integration tests with hand-crafted payloads
+or rendered DOM verify the components work in isolation. They do not
+verify the boundary between live external systems (Stripe API, browser
+event loop, real DOM) and our code. That boundary is where order-of-
+operations, expansion semantics, and timing assumptions live — and
+those assumptions are exactly the kind of thing that's easy to get
+subtly wrong and hard to write a test for.
+
+**Discipline pattern reaffirmed:** every PR ships with a manual smoke
+test, even when integration tests are exhaustive. The smoke test is
+not redundancy; it's the *first* real end-to-end exercise of the
+boundary.

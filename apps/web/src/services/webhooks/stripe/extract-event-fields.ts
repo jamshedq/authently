@@ -141,10 +141,10 @@ function readPriceId(
       ?.data;
     return readString(items?.[0]?.price?.id);
   }
-  // Checkout session: line_items isn't always expanded; the most reliable
-  // path is via the subscription's price after lookup. For Sprint 02 we
-  // accept this limitation and read what's available; if absent, the RPC
-  // will return 'unknown_price' which is the documented behavior.
+  // Checkout session: line_items.data[0].price.id. The handler routes the
+  // event through enrichEventForExtraction first, which calls
+  // stripe.checkout.sessions.retrieve with expand: ['line_items'] so the
+  // price is reliably present here. (See ../enrich-event.ts.)
   if (type === "checkout.session.completed") {
     const lineItems = (
       obj["line_items"] as

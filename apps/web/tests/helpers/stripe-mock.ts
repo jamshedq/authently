@@ -31,6 +31,7 @@ export type StripeMockState = {
   checkout: {
     sessions: {
       create: ReturnType<typeof vi.fn>;
+      retrieve: ReturnType<typeof vi.fn>;
     };
   };
   billingPortal: {
@@ -66,6 +67,7 @@ export function buildStripeMock(): StripeMockState {
     checkout: {
       sessions: {
         create: vi.fn(),
+        retrieve: vi.fn(),
       },
     },
     billingPortal: {
@@ -106,6 +108,8 @@ export const stripeMockModule = {
       sessions: {
         create: (...args: unknown[]) =>
           getStripeMock().checkout.sessions.create(...args),
+        retrieve: (...args: unknown[]) =>
+          getStripeMock().checkout.sessions.retrieve(...args),
       },
     };
     billingPortal = {
