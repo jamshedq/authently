@@ -83,6 +83,10 @@ export type Database = {
         Returns: undefined
       }
       slugify: { Args: { _input: string }; Returns: string }
+      touch_workspace_member_activity_impl: {
+        Args: { _workspace_id: string }
+        Returns: undefined
+      }
       upsert_stripe_price_tier_map_impl: {
         Args: { _entries: Json }
         Returns: number
@@ -226,18 +230,21 @@ export type Database = {
       workspace_members: {
         Row: {
           created_at: string
+          last_active_at: string
           role: string
           user_id: string
           workspace_id: string
         }
         Insert: {
           created_at?: string
+          last_active_at?: string
           role: string
           user_id: string
           workspace_id: string
         }
         Update: {
           created_at?: string
+          last_active_at?: string
           role?: string
           user_id?: string
           workspace_id?: string
@@ -342,6 +349,10 @@ export type Database = {
       }
       api_revoke_invitation: {
         Args: { _invitation_id: string }
+        Returns: undefined
+      }
+      api_touch_workspace_member_activity: {
+        Args: { _workspace_id: string }
         Returns: undefined
       }
       svc_downgrade_workspace_to_free: {
