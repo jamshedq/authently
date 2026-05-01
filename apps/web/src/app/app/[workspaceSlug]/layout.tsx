@@ -36,6 +36,8 @@
 import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import { PastDueBanner } from "@/components/billing/past-due-banner";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { typedRpc } from "@/lib/supabase/typed-rpc";
 
 // Force-dynamic rendering for the entire workspace tree. Section B
 // browser smoke testing surfaced a stale-Header bug after login/logout;
@@ -77,10 +79,56 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     // middleware or this layout's first render.
   }
 
+  // Sprint 03 A1: bump last_active_at on every workspace render so the
+  // switcher and /app cookie-fallback surface the most-recently-active
+  // workspace first. Fire-and-forget — failure here must not break the
+  // page render. The 60-second debounce lives inside the RPC body so
+  // rapid intra-workspace navigation generates at most one DB write per
+  // minute per (user, workspace) pair.
+  await bumpMemberActivity(workspaceSlug);
+
   return (
     <>
       <PastDueBanner workspaceSlug={workspaceSlug} />
       {children}
     </>
   );
+}
+
+async function bumpMemberActivity(workspaceSlug: string): Promise<void> {
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    // Resolve slug → workspace_id under RLS — non-members get null and
+    // we no-op. The api_touch_workspace_member_activity RPC also gates
+    // on user_id = auth.uid() inside, so this lookup is a UX
+    // pre-filter, not a security gate.
+    const { data, error: lookupError } = await supabase
+      .from("workspaces")
+      .select("id")
+      .eq("slug", workspaceSlug)
+      .maybeSingle<{ id: string }>();
+    if (lookupError) {
+      console.warn(
+        `[workspace-layout] activity-bump lookup failed: ${lookupError.message}`,
+      );
+      return;
+    }
+    if (!data) return;
+
+    const { error: rpcError } = await typedRpc(
+      supabase,
+      "api_touch_workspace_member_activity",
+      { _workspace_id: data.id },
+    );
+    if (rpcError) {
+      console.warn(
+        `[workspace-layout] activity-bump RPC failed: ${rpcError.message}`,
+      );
+    }
+  } catch (err) {
+    console.warn(
+      `[workspace-layout] activity-bump unexpected error: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 }

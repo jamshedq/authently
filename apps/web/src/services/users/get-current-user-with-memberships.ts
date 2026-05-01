@@ -98,6 +98,13 @@ export async function getCurrentUserWithMemberships(
       "role, workspace:workspaces ( id, name, slug, template, plan_tier )",
     )
     .eq("user_id", user.id)
+    // Sort by most-recently-active. Sprint 03 A1 added `last_active_at`,
+    // bumped via api_touch_workspace_member_activity on workspace navigation.
+    // Secondary sort on created_at gives a deterministic tiebreak when
+    // last_active_at values match exactly (default `now()` on insert can
+    // collide for fixtures or batch inserts).
+    .order("last_active_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .returns<MembershipRow[]>();
   if (error) throw error;
 

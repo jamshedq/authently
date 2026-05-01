@@ -55,17 +55,21 @@ function buildMockClient(args: {
   membershipRows: unknown[];
 }) {
   const getUser = vi.fn().mockResolvedValue(args.getUserReturns);
-  // workspace_members .select(...).eq(...).returns() chain — flat mock returning the rows.
+  // workspace_members .select(...).eq(...).order(...).order(...).returns()
+  // chain — flat mock returning the rows. Each chain step returns an
+  // object exposing the next step.
   const returns = vi
     .fn()
     .mockResolvedValue({ data: args.membershipRows, error: null });
-  const eq = vi.fn().mockReturnValue({ returns });
+  const orderInner = vi.fn().mockReturnValue({ returns });
+  const orderOuter = vi.fn().mockReturnValue({ order: orderInner });
+  const eq = vi.fn().mockReturnValue({ order: orderOuter });
   const select = vi.fn().mockReturnValue({ eq });
   const from = vi.fn().mockReturnValue({ select });
 
   return {
     client: { auth: { getUser }, from },
-    spies: { getUser, from, select, eq, returns },
+    spies: { getUser, from, select, eq, orderOuter, orderInner, returns },
   };
 }
 
@@ -116,6 +120,25 @@ describe("getCurrentUserWithMemberships", () => {
     expect(mock.spies.getUser).toHaveBeenCalledTimes(1);
     // Membership SELECT is never reached when auth fails.
     expect(mock.spies.from).not.toHaveBeenCalled();
+  });
+
+  test("sorts memberships by last_active_at desc, created_at desc (Sprint 03 A1)", async () => {
+    const prefetched = buildUser({ id: "user-sort-1" });
+    const mock = buildMockClient({
+      getUserReturns: { data: { user: null }, error: null },
+      membershipRows: [],
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await getCurrentUserWithMemberships(mock.client as any, prefetched);
+
+    // Two .order() calls: outer last_active_at desc, inner created_at desc.
+    expect(mock.spies.orderOuter).toHaveBeenCalledWith("last_active_at", {
+      ascending: false,
+    });
+    expect(mock.spies.orderInner).toHaveBeenCalledWith("created_at", {
+      ascending: false,
+    });
   });
 
   test("with prefetchedUser → membership rows are mapped (filters out null workspace joins)", async () => {
