@@ -31,11 +31,19 @@
 //   - Column-level GRANTs restrict authenticated callers to (name,
 //     template) — slug, plan_tier, stripe_* are not reachable here even
 //     if the route handler attempted to set them.
+//
+// DELETE /api/ws/[workspaceSlug]
+//
+// Soft-deletes the workspace (Sprint 04 A1). Owner-only — admins
+// receive 403 via `withMembership`'s requireRole gate. The
+// `public.api_delete_workspace` RPC re-checks owner role inside the
+// SECURITY DEFINER worker; this route's gate is the user-visible 403.
 
 import { NextResponse } from "next/server";
 import { withMembership } from "@/lib/api/with-membership";
 import { UpdateWorkspaceSchema } from "@/lib/schemas/workspaces";
 import { updateWorkspace } from "@/services/workspaces/update-workspace";
+import { deleteWorkspace } from "@/services/workspaces/delete-workspace";
 
 export const PATCH = withMembership(
   async ({ request, supabase, workspace }) => {
@@ -55,4 +63,12 @@ export const PATCH = withMembership(
     return NextResponse.json({ ok: true, workspace: updated });
   },
   { requireRole: ["owner", "admin"] },
+);
+
+export const DELETE = withMembership(
+  async ({ supabase, workspace }) => {
+    await deleteWorkspace(supabase, workspace.id);
+    return NextResponse.json({ ok: true });
+  },
+  { requireRole: ["owner"] },
 );

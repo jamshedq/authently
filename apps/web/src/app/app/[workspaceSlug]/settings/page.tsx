@@ -33,6 +33,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { DeleteWorkspaceButton } from "@/components/delete-workspace-button";
 import { WorkspaceSettingsForm } from "@/components/workspace-settings-form";
 import { CheckoutRedirectToast } from "@/components/billing/checkout-redirect-toast";
 import { ManageBillingButton } from "@/components/billing/manage-billing-button";
@@ -194,20 +195,31 @@ export default async function WorkspaceSettingsPage({
             Danger zone
           </h2>
           <p className="text-[13px] text-muted-foreground">
-            Workspace deletion and ownership transfer ship in Sprint 03.
+            {isOwner
+              ? "Deleting the workspace removes access for all members. Ownership transfer ships in a future release."
+              : "Only the workspace owner can delete this workspace or transfer ownership."}
           </p>
           <TooltipProvider delayDuration={150}>
             <div className="flex flex-wrap gap-3">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0}>
-                    <Button variant="destructive" disabled>
-                      Delete workspace
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>Available in Sprint 03.</TooltipContent>
-              </Tooltip>
+              {isOwner ? (
+                <DeleteWorkspaceButton
+                  workspaceSlug={workspace.slug}
+                  workspaceName={workspace.name}
+                />
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span tabIndex={0}>
+                      <Button variant="destructive" disabled>
+                        Delete workspace
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Only the workspace owner can delete this workspace.
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {isOwner ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -217,7 +229,9 @@ export default async function WorkspaceSettingsPage({
                       </Button>
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent>Available in Sprint 03.</TooltipContent>
+                  <TooltipContent>
+                    Available in a future release.
+                  </TooltipContent>
                 </Tooltip>
               ) : null}
             </div>
