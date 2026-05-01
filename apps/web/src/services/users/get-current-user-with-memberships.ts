@@ -18,6 +18,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+import type { User } from "@supabase/supabase-js";
 import { AuthError, type WorkspaceRole, type WorkspaceTemplate } from "@authently/shared";
 import type { AuthentlyServerClient } from "@/lib/supabase/server";
 
@@ -62,16 +63,33 @@ type MembershipRow = {
  * `workspace_members_select` policy filters to rows where
  * `user_id = auth.uid()`, and the joined `workspaces` rows are visible
  * thanks to `workspaces_member_select`. No service-role key is involved.
+ *
+ * `prefetchedUser` is an optimisation for callers that have already
+ * validated the user via `supabase.auth.getUser()` for an early-return
+ * branch (e.g. the Header's signed-in/anonymous gate). When provided, the
+ * second JWT validation is skipped — saves one round-trip per signed-in
+ * page render. When omitted, the function falls back to calling
+ * `getUser()` itself, preserving the no-arg ergonomics for callers that
+ * don't already have a user in hand (e.g. /api/me/route.ts).
+ *
+ * Sprint 02 retro [CARRYOVER] → Sprint 03 Section A item A4.
  */
 export async function getCurrentUserWithMemberships(
   supabase: AuthentlyServerClient,
+  prefetchedUser?: User,
 ): Promise<CurrentUserWithMemberships> {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    throw new AuthError();
+  let user: User;
+  if (prefetchedUser) {
+    user = prefetchedUser;
+  } else {
+    const {
+      data: { user: fetched },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetched) {
+      throw new AuthError();
+    }
+    user = fetched;
   }
 
   const { data, error } = await supabase

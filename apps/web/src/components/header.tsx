@@ -59,8 +59,11 @@ export async function Header() {
     );
   }
 
+  // Pass `user` through so getCurrentUserWithMemberships skips its
+  // internal getUser() call — saves one JWT-validation round-trip per
+  // signed-in page render. (Sprint 03 A4 — see retro [CARRYOVER].)
   const { user: currentUser, memberships } =
-    await getCurrentUserWithMemberships(supabase);
+    await getCurrentUserWithMemberships(supabase, user);
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md backdrop-saturate-150">
