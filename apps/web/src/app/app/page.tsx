@@ -56,7 +56,10 @@ export default async function AppPage() {
     redirect("/login");
   }
 
-  const { memberships } = await getCurrentUserWithMemberships(supabase);
+  // Pass `user` through so getCurrentUserWithMemberships skips its
+  // internal getUser() call — saves one JWT-validation round-trip per
+  // /app render. (Sprint 03 A4-bis, sibling to Header's A4.)
+  const { memberships } = await getCurrentUserWithMemberships(supabase, user);
 
   if (memberships.length === 0) {
     return (
