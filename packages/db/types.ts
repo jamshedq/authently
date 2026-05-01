@@ -45,6 +45,10 @@ export type Database = {
         Args: { _name: string; _user_id: string }
         Returns: string
       }
+      delete_workspace_impl: {
+        Args: { _workspace_id: string }
+        Returns: undefined
+      }
       downgrade_workspace_to_free_impl: {
         Args: { _workspace_id: string }
         Returns: undefined
@@ -262,6 +266,7 @@ export type Database = {
       workspaces: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           name: string
           past_due_since: string | null
@@ -276,6 +281,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           name: string
           past_due_since?: string | null
@@ -290,6 +296,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           name?: string
           past_due_since?: string | null
@@ -325,6 +332,10 @@ export type Database = {
           slug: string
           template: string
         }[]
+      }
+      api_delete_workspace: {
+        Args: { _workspace_id: string }
+        Returns: undefined
       }
       api_ensure_my_workspace: { Args: never; Returns: string }
       api_list_workspace_members: {
