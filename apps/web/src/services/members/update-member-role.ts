@@ -35,6 +35,7 @@
 
 import { ForbiddenError, type WorkspaceRole } from "@authently/shared";
 import type { AuthentlyServerClient } from "@/lib/supabase/server";
+import { typedUpdate } from "@/lib/supabase/typed-update";
 import type { AssignableMemberRole } from "@/lib/schemas/members";
 
 type Args = {
@@ -80,10 +81,9 @@ export async function updateMemberRole(
     throw new ForbiddenError();
   }
 
-  const { error } = await supabase
-    .from("workspace_members")
-    // supabase-js v2.105 typed-update workaround — see SPRINT_02 retro.
-    .update({ role: newRole } as never)
+  const { error } = await typedUpdate(supabase, "workspace_members", {
+    role: newRole,
+  })
     .eq("workspace_id", workspaceId)
     .eq("user_id", targetUserId);
   if (error) throw error;
