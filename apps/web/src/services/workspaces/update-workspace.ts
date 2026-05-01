@@ -21,6 +21,7 @@
 import { AppError, ForbiddenError } from "@authently/shared";
 import type { Tables, TablesUpdate } from "@authently/db";
 import type { AuthentlyServerClient } from "@/lib/supabase/server";
+import { typedUpdate } from "@/lib/supabase/typed-update";
 import type { WorkspaceForDashboard } from "./get-workspace-by-slug.ts";
 
 type WorkspaceRow = Pick<
@@ -67,19 +68,7 @@ export async function updateWorkspace(
     });
   }
 
-  // supabase-js v2.105 + exactOptionalPropertyTypes mis-infers the .update()
-  // parameter to `never` for tables whose Update type contains optional
-  // fields (every column is optional on UPDATE). Casting the body pins the
-  // call without bypassing column-level safety: PostgREST still rejects
-  // writes to slug / plan_tier / stripe_* because the GRANT on those
-  // columns is revoked from `authenticated`.
-  // TODO(sprint-02-debt): one of three sites with the same workaround;
-  // see also ensure-primary-workspace.ts (parameterless RPC variant) and
-  // create-workspace.ts (args-bearing RPC variant). Consolidate into a
-  // shared typed helper — tracked in docs/retrospectives/SPRINT_02.md.
-  const { data, error } = await supabase
-    .from("workspaces")
-    .update(updateBody as never)
+  const { data, error } = await typedUpdate(supabase, "workspaces", updateBody)
     .eq("id", workspaceId)
     .select("id, name, slug, template, plan_tier")
     .maybeSingle<WorkspaceRow>();

@@ -20,15 +20,8 @@
 
 import { AppError } from "@authently/shared";
 import type { AuthentlyServerClient } from "@/lib/supabase/server";
+import { typedRpc } from "@/lib/supabase/typed-rpc";
 import type { WorkspaceForDashboard } from "./get-workspace-by-slug.ts";
-
-type CreateWorkspaceRpcRow = {
-  id: string;
-  name: string;
-  slug: string;
-  template: string;
-  plan_tier: string;
-};
 
 /**
  * Create a new workspace + owner membership for the calling user.
@@ -49,23 +42,7 @@ export async function createWorkspace(
   supabase: AuthentlyServerClient,
   name: string,
 ): Promise<WorkspaceForDashboard> {
-  // supabase-js v2.105 + exactOptionalPropertyTypes mis-infers args-bearing
-  // RPC overloads. Runtime behaviour is correct; the typed wrapper just
-  // pins the response type to what the SQL function actually returns
-  // (an array because plpgsql `returns table(...)`).
-  // TODO(sprint-02-debt): one of three sites with the same workaround;
-  // see also ensure-primary-workspace.ts (parameterless RPC variant) and
-  // update-workspace.ts (`.update()` parameter variant). Consolidate into
-  // a shared typed helper — tracked in docs/retrospectives/SPRINT_02.md.
-  const rpc = await (
-    supabase.rpc as unknown as (
-      fn: "api_create_workspace",
-      args: { _name: string },
-    ) => Promise<{
-      data: CreateWorkspaceRpcRow[] | null;
-      error: { message: string } | null;
-    }>
-  )("api_create_workspace", { _name: name });
+  const rpc = await typedRpc(supabase, "api_create_workspace", { _name: name });
 
   if (rpc.error) {
     throw new AppError({

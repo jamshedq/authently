@@ -18,10 +18,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import type { PostgrestSingleResponse } from "@supabase/supabase-js";
 import { AppError } from "@authently/shared";
 import type { Tables } from "@authently/db";
 import type { AuthentlyServerClient } from "@/lib/supabase/server";
+import { typedRpc } from "@/lib/supabase/typed-rpc";
 import type { WorkspaceForDashboard } from "./get-workspace-by-slug.ts";
 
 type WorkspaceRow = Pick<
@@ -46,16 +46,7 @@ type WorkspaceRow = Pick<
 export async function ensurePrimaryWorkspace(
   supabase: AuthentlyServerClient,
 ): Promise<WorkspaceForDashboard> {
-  // supabase-js v2.105 + exactOptionalPropertyTypes mis-infers the chain
-  // to `never` for parameterless RPCs. Runtime behavior is correct; cast
-  // pins the response type to what the SQL function actually returns.
-  // TODO(sprint-02-debt): one of three sites with the same workaround;
-  // see also create-workspace.ts (args-bearing RPC variant) and
-  // update-workspace.ts (`.update()` parameter variant). Consolidate into
-  // a shared typed helper — tracked in docs/retrospectives/SPRINT_02.md.
-  const rpc = (await supabase.rpc(
-    "api_ensure_my_workspace",
-  )) as PostgrestSingleResponse<string>;
+  const rpc = await typedRpc(supabase, "api_ensure_my_workspace");
   if (rpc.error || !rpc.data) {
     throw new AppError({
       code: "WORKSPACE_BOOTSTRAP_FAILED",

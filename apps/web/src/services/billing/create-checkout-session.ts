@@ -18,6 +18,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { typedRpc } from "@/lib/supabase/typed-rpc";
 import { getStripeClient } from "@/services/webhooks/stripe/stripe-client";
 import { getWebhookSupabaseClient } from "@/services/webhooks/stripe/service-role-client";
 
@@ -84,10 +85,10 @@ export async function createCheckoutSession(
     customerId = customer.id;
 
     const sb = getWebhookSupabaseClient();
-    const { error } = await sb.rpc("svc_set_workspace_stripe_customer", {
+    const { error } = await typedRpc(sb, "svc_set_workspace_stripe_customer", {
       _workspace_id: args.workspace.id,
       _stripe_customer_id: customerId,
-    } as never);
+    });
     if (error) {
       throw new Error(
         `svc_set_workspace_stripe_customer failed for workspace ${args.workspace.id}: ${error.message}`,
