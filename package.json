@@ -15,6 +15,7 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
+    "test:db": "pnpm --filter @authently/db test:db",
     "test:rls": "pnpm --filter @authently/db test:rls",
     "test:auth": "pnpm --filter @authently/db test:auth",
     "test:billing": "pnpm --filter @authently/db test:billing",
