@@ -111,16 +111,44 @@ against same-subscription out-of-order webhook delivery with different
 **What:** New migration
 `<ts>_billing_period_end_monotonic.sql` recreates
 `private.process_stripe_event_impl` with a forward-only predicate on the
-four UPDATEs that touch `subscription_current_period_end`:
+**one UPDATE** that needs it: the `customer.subscription.updated` branch.
+
+Verified during A2 pre-flight that only three branches actually touch
+`subscription_current_period_end`, and only one of those benefits from
+the forward-only predicate:
+- `checkout.session.completed` — keeps the existing
+  `coalesce(_current_period_end, subscription_current_period_end)` from
+  commit `e950949`. Adding the WHERE-clause predicate would skip the
+  entire UPDATE when `_current_period_end` is null (always for checkout
+  sessions), un-fixing the race.
+- `customer.subscription.deleted` — intentionally clears period_end to
+  null on cancellation. The predicate would prevent the UPDATE from
+  firing.
+- `customer.subscription.updated` — the actual case at risk. Out-of-order
+  delivery from Stripe (snapshot semantics, where each event carries the
+  full subscription state) could otherwise overwrite a newer period_end
+  with an older one.
 
 ```sql
 update public.workspaces
-  set subscription_current_period_end = _current_period_end, ...
+  set stripe_subscription_id = _subscription_id,
+      plan_tier = mapped_tier,
+      subscription_current_period_end = _current_period_end
   where id = resolved_workspace_id
+    and (stripe_subscription_id = _subscription_id
+         or stripe_subscription_id is null)
+    -- Forward-only predicate (A2):
     and (subscription_current_period_end is null
-         or subscription_current_period_end < _current_period_end)
-    and (... existing predicates ...)
+         or subscription_current_period_end < _current_period_end);
 ```
+
+**Outcome semantics:** when the predicate fails and the UPDATE finds
+0 rows, the function returns `subscription_mismatch` — broadened from
+strictly "subscription_id mismatch" to also cover "stale period_end
+replay." The TS-side `VALID_OUTCOMES` set is unchanged; ops disambiguates
+via the SQL warning message which now reads
+`subscription_mismatch_or_stale_period_end` and includes the incoming
+period_end.
 
 **Tests (new file `packages/db/tests/billing/period-end-monotonic.test.ts`):**
 - `subscription.updated` arrives twice in reverse order (newer date first,
