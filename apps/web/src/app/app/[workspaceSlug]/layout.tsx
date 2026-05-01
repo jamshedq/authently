@@ -35,6 +35,7 @@
 
 import type { ReactNode } from "react";
 import { cookies } from "next/headers";
+import { PastDueBanner } from "@/components/billing/past-due-banner";
 
 // Force-dynamic rendering for the entire workspace tree. Section B
 // browser smoke testing surfaced a stale-Header bug after login/logout;
@@ -76,5 +77,10 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     // middleware or this layout's first render.
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <PastDueBanner workspaceSlug={workspaceSlug} />
+      {children}
+    </>
+  );
 }

@@ -29,13 +29,17 @@ export type WorkspaceSettingsView = {
   planTier: string;
   createdAt: string;
   memberCount: number;
+  subscriptionStatus: "active" | "past_due" | "canceled";
+  subscriptionCurrentPeriodEnd: string | null;
+  pastDueSince: string | null;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
 };
 
 /**
  * Read the extra columns the settings page needs on top of what
- * `requireMembership` already returned: the timestamp + member count.
- * The membership row + workspace row reads are already gated by RLS at
- * the call site, so this service just adds the extra columns.
+ * `requireMembership` already returned: the timestamp, member count, and
+ * the billing-state fields used to drive the Section D billing UI.
  *
  * `count: 'exact'` runs a separate COUNT(*) under the same RLS predicate;
  * it's cheap because workspace_members has the user_id index from
@@ -44,13 +48,30 @@ export type WorkspaceSettingsView = {
 export async function getWorkspaceForSettings(
   supabase: AuthentlyServerClient,
   workspaceId: string,
-): Promise<{ createdAt: string; memberCount: number }> {
+): Promise<{
+  createdAt: string;
+  memberCount: number;
+  subscriptionStatus: "active" | "past_due" | "canceled";
+  subscriptionCurrentPeriodEnd: string | null;
+  pastDueSince: string | null;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+}> {
   const [workspaceRes, memberRes] = await Promise.all([
     supabase
       .from("workspaces")
-      .select("created_at")
+      .select(
+        "created_at, subscription_status, subscription_current_period_end, past_due_since, stripe_customer_id, stripe_subscription_id",
+      )
       .eq("id", workspaceId)
-      .maybeSingle<{ created_at: string }>(),
+      .maybeSingle<{
+        created_at: string;
+        subscription_status: "active" | "past_due" | "canceled";
+        subscription_current_period_end: string | null;
+        past_due_since: string | null;
+        stripe_customer_id: string | null;
+        stripe_subscription_id: string | null;
+      }>(),
     supabase
       .from("workspace_members")
       .select("user_id", { count: "exact", head: true })
@@ -59,8 +80,6 @@ export async function getWorkspaceForSettings(
 
   if (workspaceRes.error) throw workspaceRes.error;
   if (!workspaceRes.data) {
-    // RLS hid the row — caller should already have run requireMembership,
-    // so this is an unexpected race / inconsistency.
     throw new AppError({
       code: "WORKSPACE_NOT_VISIBLE",
       message: "Workspace not visible to caller",
@@ -69,8 +88,14 @@ export async function getWorkspaceForSettings(
   }
   if (memberRes.error) throw memberRes.error;
 
+  const w = workspaceRes.data;
   return {
-    createdAt: workspaceRes.data.created_at,
+    createdAt: w.created_at,
     memberCount: memberRes.count ?? 0,
+    subscriptionStatus: w.subscription_status,
+    subscriptionCurrentPeriodEnd: w.subscription_current_period_end,
+    pastDueSince: w.past_due_since,
+    stripeCustomerId: w.stripe_customer_id,
+    stripeSubscriptionId: w.stripe_subscription_id,
   };
 }

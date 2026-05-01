@@ -34,6 +34,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { WorkspaceSettingsForm } from "@/components/workspace-settings-form";
+import { CheckoutRedirectToast } from "@/components/billing/checkout-redirect-toast";
+import { ManageBillingButton } from "@/components/billing/manage-billing-button";
+import { UpgradeButton } from "@/components/billing/upgrade-button";
+import { formatGracePeriodLabel } from "@/lib/billing/grace-period";
 import { requireMembership } from "@/lib/api/require-membership";
 import { getWorkspaceForSettings } from "@/services/workspaces/get-workspace-for-settings";
 
@@ -135,10 +139,54 @@ export default async function WorkspaceSettingsPage({
           <p className="text-[13px] text-muted-foreground">
             Manage your subscription, payment method, and invoices.
           </p>
-          {/* Section D wires this into Stripe Customer Portal. */}
-          <Button variant="ghost" disabled>
-            Manage billing
-          </Button>
+
+          {stats.subscriptionStatus === "past_due" ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-[13px] text-red-900">
+              <p className="font-medium">Payment failed.</p>
+              <p className="mt-1 leading-snug">
+                Update your billing to keep your subscription. Auto-downgrades
+                to Free{" "}
+                {(() => {
+                  const label = formatGracePeriodLabel(
+                    stats.pastDueSince ? new Date(stats.pastDueSince) : null,
+                  );
+                  return label === "today" ? "today" : `in ${label}`;
+                })()}{" "}
+                if not resolved.
+              </p>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <span className="rounded-full border border-border/60 bg-muted/40 px-3 py-1 font-mono text-[12px] uppercase tracking-[0.6px] text-muted-foreground">
+              Current plan: {planLabel}
+            </span>
+            {stats.subscriptionStatus === "canceled" ? (
+              <span className="rounded-full border border-border/60 bg-muted/40 px-3 py-1 font-mono text-[12px] uppercase tracking-[0.6px] text-muted-foreground">
+                Status: Canceled
+              </span>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap gap-3 pt-1">
+            {stats.stripeCustomerId ? (
+              <ManageBillingButton workspaceSlug={workspace.slug} variant="default" />
+            ) : (
+              <UpgradeButton workspaceSlug={workspace.slug} tier="solo">
+                Upgrade to Solo
+              </UpgradeButton>
+            )}
+            {workspace.planTier === "free" && stats.stripeCustomerId ? (
+              <UpgradeButton workspaceSlug={workspace.slug} tier="solo">
+                Subscribe to Solo
+              </UpgradeButton>
+            ) : null}
+          </div>
+
+          <CheckoutRedirectToast
+            workspaceSlug={workspace.slug}
+            planTier={workspace.planTier}
+          />
         </section>
 
         <section className="space-y-3">

@@ -78,6 +78,10 @@ export type Database = {
         }
         Returns: string
       }
+      set_workspace_stripe_customer_impl: {
+        Args: { _stripe_customer_id: string; _workspace_id: string }
+        Returns: undefined
+      }
       slugify: { Args: { _input: string }; Returns: string }
       upsert_stripe_price_tier_map_impl: {
         Args: { _entries: Json }
@@ -362,6 +366,10 @@ export type Database = {
           _workspace_id_hint: string
         }
         Returns: string
+      }
+      svc_set_workspace_stripe_customer: {
+        Args: { _stripe_customer_id: string; _workspace_id: string }
+        Returns: undefined
       }
       svc_upsert_stripe_price_tier_map: {
         Args: { _entries: Json }

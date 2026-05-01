@@ -220,3 +220,254 @@ The convention now reads:
 
 Documented in CLAUDE.md (project root) so the convention persists
 across sessions.
+
+## Section D Commit 2 — design deviations + follow-ups
+
+### Routes: `/api/ws/[slug]/billing/*` instead of `/api/billing/*` (vs. spec D2/D3)
+
+**Discovered:** Section D Commit 2 planning, 2026-04-30.
+
+The Sprint 02 spec D2/D3 listed the billing routes as
+`POST /api/billing/checkout` and `POST /api/billing/portal`. By the time
+Section D Commit 2 began, every other Sprint 02 API route had landed
+under `/api/ws/[workspaceSlug]/*` (members, invitations, info, member-management,
+etc.). Putting billing under `/api/billing/*` would have required a
+separate body-driven slug resolver and would have made `withMembership`
+unusable as-is.
+
+We deviated to `/api/ws/[workspaceSlug]/billing/checkout` and
+`/api/ws/[workspaceSlug]/billing/portal`. Pattern-consistent, slug-driven
+auth + role gating via `withMembership({ requireRole: ['owner'] })`,
+zero new middleware. Same lesson as Section D Commit 1's schema-choice
+deviation: pattern consistency outweighs spec-text adherence when the
+spec was written before the pattern crystallized.
+
+### Stripe customer pre-creation pattern
+
+**Added:** Section D Commit 2 implementation, 2026-04-30.
+
+Originally planned as "let Stripe auto-create the customer at checkout
+session time." On review, this leaves the resulting Stripe `customer.*`
+record without `metadata.workspace_id`, making support debugging from
+the Stripe Dashboard side require a session/subscription cross-reference
+(neither of which is the resource ops would search by first).
+
+Pre-create instead: `apps/web/src/services/billing/create-checkout-session.ts`
+calls `stripe.customers.create({ metadata: { workspace_id }})` if
+`workspace.stripe_customer_id` is null, then persists the new customer
+ID via `public.svc_set_workspace_stripe_customer` (migration
+`20260430234723_set_workspace_stripe_customer`) before opening the
+Checkout session. The persistence makes retries (network blip, double-
+click, sequential failed checkouts) idempotent — a workspace ends up
+with at most one Stripe customer.
+
+Trade-off: one extra Stripe API call per first-time checkout. Worth it
+for the metadata cleanliness and the support-debugging payoff.
+
+### Past-due banner edge case: workspace with no `stripe_customer_id`
+
+**Added:** Section D Commit 2 implementation, 2026-04-30.
+
+The banner's primary CTA opens the Stripe Customer Portal, which requires
+a `stripe_customer_id`. A `past_due` workspace with `stripe_customer_id IS NULL`
+shouldn't exist in normal flow (the customer is pre-created at first
+checkout — see preceding entry), but could exist from Sprint 01 manual
+seed data, an interrupted checkout, or a Stripe-side anomaly.
+
+Banner branches in this case: shows "Contact support" with a `mailto:`
+link to a placeholder address. Real `support@authently.io` (or whatever
+support address ships) is Sprint 12 prep. Not user-actionable today,
+but at least it doesn't render a broken Manage-billing button.
+
+### Free-tier `/pricing` CTA links to repo root
+
+**Added:** Section D Commit 2 implementation, 2026-04-30.
+
+The Free tier's "Self-host on GitHub" CTA links to
+`https://github.com/jamshedq/authently` — the repo root README.
+
+**Sprint 12 follow-up:** add a top-level `## Self-hosting` section to
+`README.md` (or a separate `docs/SELF_HOSTING.md`) before the Phase 1
+launch. Right now the repo root README is short on operational detail;
+sending a self-host-curious user there leaves them figuring it out from
+docker/compose files. Tracked here so it doesn't get lost.
+
+### Test infrastructure: `apps/web` vitest harness + `test:web` gate
+
+**Added:** Section D Commit 2 implementation, 2026-04-30.
+
+Section D Commit 2 introduced the first apps/web integration tests
+(billing checkout/portal route handlers + service unit tests). Required
+new infrastructure:
+
+- `apps/web/vitest.config.ts` — shares `.env.test` with `packages/db` so
+  CI runs against the same local Supabase fixture
+- `apps/web/tests/setup.ts` — env validation + NEXT_PUBLIC_* mirroring
+- `apps/web/tests/helpers/{test-workspace,stripe-mock,server-client-mock}.ts`
+  — fixture creation, Stripe SDK mock module, mockable
+  `createSupabaseServerClient`
+- `pnpm test:web` script (root + apps/web) — added as the 7th local gate
+
+Future API routes (D-other-routes, Sprint 03+) reuse this harness. The
+one-time cost of the harness is paid; subsequent route tests are
+checkout/portal-style copies.
+
+### Service-role allow-list expansion
+
+**Discovered:** Section D Commit 2 implementation review, 2026-04-30.
+
+The Stripe Checkout flow needs to call `public.svc_set_workspace_stripe_customer`
+during pre-creation of the Stripe customer (see preceding entry on the
+pre-creation pattern). That RPC is service-role-only by GRANT, so the
+checkout flow needs a service-role Supabase client — adding a fourth
+legitimate apps/web service-role usage to the allow-list that was
+previously implicit.
+
+The deeper reason this is unavoidable: `workspaces.stripe_customer_id`
+is locked to `service_role`-only writes by Section B's column-level
+GRANTs (migration `20260429213717_create_workspace_rpc.sql` revokes
+UPDATE-on-all-columns from `authenticated` and re-grants only
+`(name, template)`). An RLS-subject client physically cannot write
+`stripe_customer_id`, regardless of how SECURITY DEFINER routing is
+arranged. The choice is between:
+- service-role client → RPC (current state; preserves the column lock)
+- relax the column GRANT to allow authenticated UPDATE on
+  `stripe_customer_id` (would weaken Section B's invariant — every
+  webhook event Stripe sends would need a corresponding "authenticated
+  user can pretend to be Stripe" path)
+
+The current state is correct; the allow-list just needed updating to
+reflect it. CLAUDE.md rule 6 now formally enumerates the four legitimate
+service-role usages in apps/web (was: only Trigger.dev tasks + tests +
+webhook handler), with the fourth being this Checkout flow. Future
+service-role expansions require:
+
+1. Updating CLAUDE.md rule 6.
+2. Naming the workspace-context boundary that protects the call.
+3. Routing mutations through a `public.svc_*` SECURITY DEFINER wrapper
+   (not a raw client `.from(table).update(...)`), so the invariants
+   live in the database alongside the GRANT-based perimeter.
+
+The third constraint matters: a service-role raw write would skip the
+SQL-level invariant checks that `svc_*` wrappers can enforce. The
+`svc_set_workspace_stripe_customer` worker, for example, asserts the
+column is currently null before writing — preventing accidental
+double-create of Stripe customers if a future code path triggers a
+second pre-creation.
+
+### Manual smoke caught a real bug that integration tests missed
+
+**Discovered:** Section D Commit 2 manual smoke test, 2026-05-01.
+
+The first real end-to-end Stripe Checkout completion against a real
+workspace surfaced a chicken-and-egg deadlock between
+`checkout.session.completed` and the subscription/invoice events that
+follow it. All 31 billing integration tests passed; manual smoke caught
+it at Phase 5.
+
+**Symptom (from `stripe_events.payload` after a real checkout):**
+
+| Event | `price_id` | `subscription_id` | `workspace_id_hint` | Outcome |
+|---|---|---|---|---|
+| `checkout.session.completed` | `null` | `sub_…` | `27f06054-…` (correct) | `unknown_price` |
+| `customer.subscription.updated` | `price_…` (correct) | `sub_…` | `null` | `workspace_not_found` |
+| `invoice.payment_succeeded` | `price_…` | `sub_…` | `null` | `workspace_not_found` |
+
+**Root cause:**
+
+1. Stripe webhook events for `checkout.session.completed` do NOT include
+   `line_items` by default — populating `price_id` requires an explicit
+   `expand` on the API.
+2. The Sprint 02 D Commit 1 extractor read `obj["line_items"]` directly
+   off the event payload (which was always `undefined` for real
+   webhooks) → `price_id: null` → RPC returned `unknown_price` → the
+   workspace's `stripe_subscription_id` stayed NULL.
+3. The follow-up `customer.subscription.updated` event has the price
+   correctly, but the RPC's resolver only tried to find the workspace
+   by `stripe_subscription_id`. Since step 2 left it NULL,
+   `workspace_not_found` fired even though we knew the customer.
+4. `invoice.payment_succeeded` repeated step 3.
+
+The integration tests for these branches passed because they pre-populated
+`workspace_id_hint`/`price_id`/`subscription_id` from hand-crafted
+payloads; they never went through the real
+`stripe.checkout.sessions.retrieve` round-trip and never exercised the
+"checkout.session.completed dropped, recovery event arrives" sequence.
+
+**Two-pronged fix** (one PR commit on `section-d-commit-2`):
+
+1. **`apps/web/src/services/webhooks/stripe/enrich-event.ts`** — new
+   helper. Before extraction, calls
+   `stripe.checkout.sessions.retrieve(id, { expand: ['line_items'] })`
+   for `checkout.session.completed` events. Returns the event with
+   `data.object` replaced by the expanded session. All other event
+   types pass through unchanged. One Stripe API call per checkout
+   completion, acceptable cost.
+
+2. **`packages/db/migrations/20260501025654_billing_customer_id_fallback.sql`** —
+   defense in depth. The four subscription-bound branches in
+   `private.process_stripe_event_impl`
+   (`customer.subscription.updated`, `customer.subscription.deleted`,
+   `invoice.payment_failed`, `invoice.payment_succeeded`) now fall back
+   to a `stripe_customer_id` lookup if the primary
+   `stripe_subscription_id` lookup misses, **guarded by**
+   `stripe_subscription_id IS NULL`. The guard prevents accidentally
+   matching a workspace already linked to a different active
+   subscription. When fallback resolves, the UPDATE links
+   `stripe_subscription_id` so subsequent events for the same
+   subscription resolve via the primary path.
+
+The line_items expansion fixes the root cause; the customer_id fallback
+is for production edge cases (manual Stripe Dashboard actions,
+out-of-order events, admin-driven subscription changes) where the same
+deadlock could re-emerge.
+
+**Third bug surfaced during the post-fix smoke run** — the
+`stripe.checkout.sessions.retrieve` round-trip in (1) is slower than
+the synchronous parse of `customer.subscription.updated`, so on the
+real wire the UPDATE for the subscription event fires *before* the
+UPDATE for the checkout event. The `customer_id` fallback from (2) made
+the subscription event's UPDATE succeed (sets `period_end` correctly),
+but `checkout.session.completed` then ran second and clobbered
+`period_end = null` (the extractor doesn't populate `current_period_end`
+for checkout sessions — that field is only on the subscription).
+
+Fixed in the same migration by changing the checkout branch's UPDATE to
+`subscription_current_period_end = coalesce(_current_period_end, subscription_current_period_end)`.
+Test in `packages/db/tests/billing/customer-id-fallback.test.ts`
+("checkout.session.completed with null _current_period_end → preserves
+existing period_end") replays the race in the deterministic order.
+
+**Pattern lesson — second confirmation in Sprint 02:**
+
+Sprint 02 has now had two cases where exhaustive integration tests
+passed but manual smoke caught real bugs:
+
+1. **Section A** — Radix DropdownMenu sign-out race. Component tests
+   passed; clicking sign-out in a real browser failed.
+2. **Section D Commit 2** — this entry. 31 billing tests passed;
+   running real Stripe Checkout end-to-end deadlocked.
+
+The pattern is consistent: integration tests with hand-crafted payloads
+or rendered DOM verify the components work in isolation. They do not
+verify the boundary between live external systems (Stripe API, browser
+event loop, real DOM) and our code. That boundary is where order-of-
+operations, expansion semantics, and timing assumptions live — and
+those assumptions are exactly the kind of thing that's easy to get
+subtly wrong and hard to write a test for.
+
+**Discipline pattern reaffirmed:** every PR ships with a manual smoke
+test, even when integration tests are exhaustive. The smoke test is
+not redundancy; it's the *first* real end-to-end exercise of the
+boundary.
+
+**Sprint 03 follow-up:** Strengthen `process_stripe_event` period_end
+to monotonic forward-only via a WHERE predicate (mirroring
+`past_due_since`'s `coalesce(past_due_since, now())` coalesce-on-first
+invariant pattern). Defends against same-subscription out-of-order
+delivery with different period_ends — a strictly stronger guarantee
+than this commit's null-vs-populated `coalesce`. Not blocking Section D
+ship; the smoke only surfaced the null-clobber scenario, and Stripe's
+"object snapshot" delivery semantics make non-monotonic same-sub
+arrivals rare in practice. Worth doing alongside the supabase-js typing
+consolidation in Sprint 03's first cleanup commit.
