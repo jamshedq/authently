@@ -311,3 +311,46 @@ new infrastructure:
 Future API routes (D-other-routes, Sprint 03+) reuse this harness. The
 one-time cost of the harness is paid; subsequent route tests are
 checkout/portal-style copies.
+
+### Service-role allow-list expansion
+
+**Discovered:** Section D Commit 2 implementation review, 2026-04-30.
+
+The Stripe Checkout flow needs to call `public.svc_set_workspace_stripe_customer`
+during pre-creation of the Stripe customer (see preceding entry on the
+pre-creation pattern). That RPC is service-role-only by GRANT, so the
+checkout flow needs a service-role Supabase client — adding a fourth
+legitimate apps/web service-role usage to the allow-list that was
+previously implicit.
+
+The deeper reason this is unavoidable: `workspaces.stripe_customer_id`
+is locked to `service_role`-only writes by Section B's column-level
+GRANTs (migration `20260429213717_create_workspace_rpc.sql` revokes
+UPDATE-on-all-columns from `authenticated` and re-grants only
+`(name, template)`). An RLS-subject client physically cannot write
+`stripe_customer_id`, regardless of how SECURITY DEFINER routing is
+arranged. The choice is between:
+- service-role client → RPC (current state; preserves the column lock)
+- relax the column GRANT to allow authenticated UPDATE on
+  `stripe_customer_id` (would weaken Section B's invariant — every
+  webhook event Stripe sends would need a corresponding "authenticated
+  user can pretend to be Stripe" path)
+
+The current state is correct; the allow-list just needed updating to
+reflect it. CLAUDE.md rule 6 now formally enumerates the four legitimate
+service-role usages in apps/web (was: only Trigger.dev tasks + tests +
+webhook handler), with the fourth being this Checkout flow. Future
+service-role expansions require:
+
+1. Updating CLAUDE.md rule 6.
+2. Naming the workspace-context boundary that protects the call.
+3. Routing mutations through a `public.svc_*` SECURITY DEFINER wrapper
+   (not a raw client `.from(table).update(...)`), so the invariants
+   live in the database alongside the GRANT-based perimeter.
+
+The third constraint matters: a service-role raw write would skip the
+SQL-level invariant checks that `svc_*` wrappers can enforce. The
+`svc_set_workspace_stripe_customer` worker, for example, asserts the
+column is currently null before writing — preventing accidental
+double-create of Stripe customers if a future code path triggers a
+second pre-creation.

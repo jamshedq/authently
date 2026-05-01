@@ -46,7 +46,13 @@ The technical architecture treats them identically. Marketing and onboarding emp
 3. Every API route resolves `workspace_id` from the JWT or path parameter and asserts membership BEFORE any query.
 4. Every Trigger.dev task takes `workspace_id` as the first payload field.
 5. Every S3 key is namespaced as `ws/{workspace_id}/...`.
-6. Service-role DB access is allowed only inside Trigger.dev tasks that explicitly assert workspace context.
+6. Service-role allow-list. `SUPABASE_SERVICE_ROLE_KEY` is used in:
+    1. **Trigger.dev tasks** via `getJobsSupabaseClient` (gated by `defineTenantTask` or a documented system-task bypass per `apps/jobs/SYSTEM_TASKS.md`).
+    2. **Test helpers** (`packages/db/tests/helpers/*`, `apps/web/tests/helpers/*`) — fixture creation + cleanup only; never imported by app code.
+    3. **Webhook handler** (`apps/web/src/app/api/webhooks/stripe/route.ts`) — service-role is the canonical authority for processing Stripe events. The only allowed mutations are through SECURITY DEFINER RPCs whose business invariants are enforced inside the function (see `public.svc_process_stripe_event`).
+    4. **Stripe Checkout flow** (`apps/web/src/services/billing/create-checkout-session.ts`) — service-role is required to set `workspace.stripe_customer_id`, which is locked to `service_role`-only by Section B's column-level GRANTs (see migration `20260429213717_create_workspace_rpc.sql`). The mutation goes through `public.svc_set_workspace_stripe_customer`, not a raw UPDATE.
+
+    All other apps/web code MUST use RLS-subject clients via `createSupabaseServerClient` or `createSupabaseBrowserClient`. Adding a new service-role usage requires updating this allow-list, naming the workspace-context boundary that protects the call, and (where mutations are involved) routing the mutation through a `public.svc_*` SECURITY DEFINER wrapper rather than a raw client write.
 7. CI runs the RLS test suite on every PR; cross-tenant access tests must fail.
 
 ## Database function naming convention
