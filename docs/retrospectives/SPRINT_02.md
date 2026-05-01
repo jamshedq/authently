@@ -460,3 +460,14 @@ subtly wrong and hard to write a test for.
 test, even when integration tests are exhaustive. The smoke test is
 not redundancy; it's the *first* real end-to-end exercise of the
 boundary.
+
+**Sprint 03 follow-up:** Strengthen `process_stripe_event` period_end
+to monotonic forward-only via a WHERE predicate (mirroring
+`past_due_since`'s `coalesce(past_due_since, now())` coalesce-on-first
+invariant pattern). Defends against same-subscription out-of-order
+delivery with different period_ends — a strictly stronger guarantee
+than this commit's null-vs-populated `coalesce`. Not blocking Section D
+ship; the smoke only surfaced the null-clobber scenario, and Stripe's
+"object snapshot" delivery semantics make non-monotonic same-sub
+arrivals rare in practice. Worth doing alongside the supabase-js typing
+consolidation in Sprint 03's first cleanup commit.
