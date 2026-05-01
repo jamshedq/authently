@@ -49,6 +49,17 @@
 #    `workspace_invitations.token_hash`. Cast bypasses the type error.
 #    Fix: a `typedInsert<T extends TableName>(client, table, body)` helper
 #    paralleling typedUpdate. Defer until a second binary-insert site exists.
+#
+# 3. Hoist silentMembershipLookup to workspace layout, pass to PastDueBanner via props
+#    Site: apps/web/src/app/app/[workspaceSlug]/layout.tsx
+#    After Sprint 03 A1 added the activity-bump (slug → workspace_id resolve
+#    + RPC call), the workspace layout now does overlapping DB work with
+#    PastDueBanner: the layout's slug → workspace_id SELECT and
+#    PastDueBanner's silentMembershipLookup() both fetch the same
+#    workspace + membership. Hoisting silentMembershipLookup to the layout
+#    and passing the membership context to PastDueBanner via props would
+#    save 2-3 DB queries per workspace render. Naturally pairs with other
+#    layout-render optimizations later (post-Sprint-03; not blocking).
 
 5:Sprint 03 lives at `docs/specs/SPRINT_03_carryovers.md`.
 9:tech debt in Sprint 03 or for Sprint 12 launch prep.
