@@ -1,6 +1,30 @@
 # Sprint 03 carryover index — grep output of "Sprint 03" mentions in SPRINT_02.md
 # Each line: LINE_NUM:CONTENT — jump to docs/retrospectives/SPRINT_02.md:N for context
 # Used as input when planning the actual Sprint 03 spec.
+#
+# === Sprint 03 routing decision (2026-05-01) ===
+# Sprint 03's PRIMARY scope is source ingestion per docs/specs/build_plan.md S03
+# (yt-dlp worker + Whisper + Trafilatura + pdfplumber + file upload UI).
+#
+# Items below carry into Sprint 03 ONLY as the cleanup commit:
+#   - supabase-js type-inference workarounds (4 sites)
+#   - Header double-getUser refactor
+#   - last_active_at column on workspace_members
+#   - monotonic forward-only period_end predicate
+#   - RLS test parallelization
+#
+# Items that earlier planning placed in Sprint 03 but ARE NOT Sprint 03 scope —
+# routed to Sprint 04+ (these came from SPRINT_02.md "Out of scope", not from
+# build_plan.md, and conflict with the build plan's S03 source-ingestion theme):
+#   - Workspace deletion (soft-delete + cascade) → Sprint 04+
+#   - Ownership transfer flow → Sprint 04+
+#   - Account deletion (GDPR scope) → Sprint 04+
+#   - Resend domain verification + DNS records → Sprint 04+ (continues using
+#     onboarding@resend.dev meanwhile)
+#   - Cosmetic UX items (duplicate /invite header, "Wrong Account" CTA) → Sprint 04+
+#
+# Sprint 12 launch-prep items remain [DEFERRED] in SPRINT_02.md (real support
+# email, README Self-hosting section, real wordmark, real pricing decisions).
 
 5:Sprint 03 lives at `docs/specs/SPRINT_03_carryovers.md`.
 9:tech debt in Sprint 03 or for Sprint 12 launch prep.
