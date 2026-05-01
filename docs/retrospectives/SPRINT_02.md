@@ -1,13 +1,21 @@
 # Sprint 02 retrospective — running notes
 
-This file is a living record of learnings, surprises, and follow-up tech
-debt discovered during Sprint 02. Append as the sprint progresses; do not
-defer to a single end-of-sprint write-up. Items here become candidates for
-front-loaded tech debt in Sprint 03.
+**Status:** Sprint 02 closed 2026-04-30. All five sections (A, B, C, D, E)
+on `main`. This document is the historical record; the carryover index for
+Sprint 03 lives at `docs/specs/SPRINT_03_carryovers.md`.
+
+This file is a record of learnings, surprises, and follow-up tech debt
+discovered during Sprint 02. Items here become candidates for front-loaded
+tech debt in Sprint 03 or for Sprint 12 launch prep.
+
+**Status legend** (applied to each ### entry below):
+- **[DONE]** — completed during Sprint 02 (decision implemented, fix shipped, or finding verified)
+- **[CARRYOVER]** — deferred to Sprint 03 (carried in `SPRINT_03_carryovers.md`)
+- **[DEFERRED]** — deferred to Sprint 12 launch prep or later (not urgent for the current product surface)
 
 ## Tech debt tracked for late S02 / early S03
 
-### Consolidate supabase-js type-inference workarounds
+### [CARRYOVER] Consolidate supabase-js type-inference workarounds
 
 **Discovered:** Sprint 02 Section B, Commit 1.
 
@@ -32,7 +40,7 @@ front-loaded tech debt in Sprint 03.
 
 **When:** late Sprint 02 (after Section C/D land) or early Sprint 03's front-loaded tech debt block — same time slot used in S02 prep.
 
-### Workspace selection ordering is non-deterministic
+### [CARRYOVER] Workspace selection ordering is non-deterministic
 
 **Discovered:** Sprint 02 Section B, Commit 2.
 
@@ -46,7 +54,7 @@ front-loaded tech debt in Sprint 03.
 
 **When:** Sprint 03 — pairs naturally with the workspace deletion + ownership transfer work in the same sprint, since both touch `workspace_members`.
 
-### Header double-`getUser` on signed-in renders
+### [CARRYOVER] Header double-`getUser` on signed-in renders
 
 **Discovered:** Sprint 02 Section B, Commit 2.
 
@@ -62,19 +70,19 @@ front-loaded tech debt in Sprint 03.
 
 **When:** Sprint 03 polish item, alongside the supabase-js typed-helper consolidation. Same code-path, similar shape of refactor.
 
-### Workspace settings + members lacked navigation entries
+### [DONE] Workspace settings + members lacked navigation entries
 
 **Discovered:** Sprint 02 Section B browser smoke test.
 
 After Section B shipped, the only way to reach `/app/[slug]/settings` was by typing the URL. Members management (Section C) had the same problem. Both gaps are addressed in Section C's UI commit, which adds "Workspace settings" + "Members" entries to the UserMenu's WORKSPACES section. **Status: addressed in Section C Commit 2.**
 
-### Header dev-cache surfaced again post-login/logout
+### [DONE] Header dev-cache surfaced again post-login/logout
 
 **Discovered:** Sprint 02 Section B browser smoke test.
 
 The Server Component header occasionally serves stale signed-in/out state until a hard refresh in dev. Section C's UI commit lifts `export const dynamic = "force-dynamic"` to `apps/web/src/app/app/[workspaceSlug]/layout.tsx`, which forces SSR per request for the entire authed tree. Trade-off: prevents static rendering of `/app/[slug]/*` — acceptable because every page in that tree is auth-gated dynamic anyway. **Status: addressed in Section C Commit 2.**
 
-### RLS test count growing section-over-section
+### [CARRYOVER] RLS test count growing section-over-section
 
 **Discovered:** Sprint 02 Section C, Commit 1.
 
@@ -86,23 +94,23 @@ Test count and run-time grow with every section: Section A added 9 RLS tests, Se
 2. Run them in parallel via vitest's existing `--shard` flag, or split into separate CI jobs that each set up Supabase independently.
 3. Move email-flow tests (`tests/auth/password-reset.test.ts` + future invitation-email tests) to a tagged "needs-mailpit" group that can be skipped when Mailpit's container isn't available.
 
-**When:** Sprint 12 prep, or sooner if any single CI run starts to clear 5 minutes. **Not urgent.**
+**When:** Sprint 03's first cleanup commit, alongside the supabase-js typing consolidation. Sprint 02 nearly tripled the local-test surface (39 RLS + 37 billing + 3 auth + 35 web = 114 tests across 4 suites); Sprint 03 will add more (workspace deletion + ownership transfer + invitation enhancements), so the CI-runtime concern is now closer to actionable than originally estimated.
 
-## Section C smoke test findings (verified end-to-end)
+## [DONE] Section C smoke test findings (verified end-to-end)
 
 - Multi-tenant invitation flow works correctly through anonymous → sign-up → accept paths
 - Email mismatch detection works (anti-enumeration with masked email hint)
 - Last-owner UI protection verified with helpful tooltip; DB trigger is the security floor
-- Resend free tier rejected non-owner emails (403). Workaround: dev-fallback `console.info` logs full email body. **Tracked as removal item before Section D ships.**
+- Resend free tier rejected non-owner emails (403). Workaround: dev-fallback `console.info` logs full email body. **Tracked as removal item before Section D ships.** — closed in PR #2 (commit `53538c8`).
 
-## Cosmetic UX issues found in Section C smoke test (defer to polish sprint)
+## [CARRYOVER] Cosmetic UX issues found in Section C smoke test (defer to polish sprint)
 
 - Duplicate "Authently" header rendered on `/invite/[token]` pages — workspace layout bleeds through onto public routes that have their own header
 - "Wrong Account" page's primary CTA is "Account settings" instead of more useful "Sign out" — should offer the corrective action directly
 
 ## Section D Commit 1 — design deviations from spec text
 
-### `past_due_since` column added; grace anchor changed (vs. spec D5)
+### [DONE] `past_due_since` column added; grace anchor changed (vs. spec D5)
 
 **Discovered:** Section D Commit 1 planning, 2026-04-30.
 
@@ -136,7 +144,7 @@ of past_due → free"); only the anchor moved.
 **Approved:** by Jamshed during Section D Commit 1 planning, before any code
 was written.
 
-### `invoice.payment_succeeded` added to handled events (vs. spec D4)
+### [DONE] `invoice.payment_succeeded` added to handled events (vs. spec D4)
 
 **Discovered:** Section D Commit 1 planning, 2026-04-30.
 
@@ -156,7 +164,7 @@ Added `invoice.payment_succeeded` as a fifth event:
 **Approved:** by Jamshed; runbook (`docs/runbooks/stripe-products.md`) and
 the `--events` filter argument were updated in the same commit.
 
-### Schema choice: billing RPCs — `private` workers + `public.svc_*` wrappers
+### [DONE] Schema choice: billing RPCs — `private` workers + `public.svc_*` wrappers
 
 **Discovered:** Section D Commit 1 implementation, 2026-04-30.
 **Refactored:** before merge of section-d-commit-1, same day.
@@ -223,7 +231,7 @@ across sessions.
 
 ## Section D Commit 2 — design deviations + follow-ups
 
-### Routes: `/api/ws/[slug]/billing/*` instead of `/api/billing/*` (vs. spec D2/D3)
+### [DONE] Routes: `/api/ws/[slug]/billing/*` instead of `/api/billing/*` (vs. spec D2/D3)
 
 **Discovered:** Section D Commit 2 planning, 2026-04-30.
 
@@ -242,7 +250,7 @@ zero new middleware. Same lesson as Section D Commit 1's schema-choice
 deviation: pattern consistency outweighs spec-text adherence when the
 spec was written before the pattern crystallized.
 
-### Stripe customer pre-creation pattern
+### [DONE] Stripe customer pre-creation pattern
 
 **Added:** Section D Commit 2 implementation, 2026-04-30.
 
@@ -264,7 +272,7 @@ with at most one Stripe customer.
 Trade-off: one extra Stripe API call per first-time checkout. Worth it
 for the metadata cleanliness and the support-debugging payoff.
 
-### Past-due banner edge case: workspace with no `stripe_customer_id`
+### [DONE] Past-due banner edge case: workspace with no `stripe_customer_id`
 
 **Added:** Section D Commit 2 implementation, 2026-04-30.
 
@@ -276,23 +284,24 @@ seed data, an interrupted checkout, or a Stripe-side anomaly.
 
 Banner branches in this case: shows "Contact support" with a `mailto:`
 link to a placeholder address. Real `support@authently.io` (or whatever
-support address ships) is Sprint 12 prep. Not user-actionable today,
-but at least it doesn't render a broken Manage-billing button.
+support address ships) is **Sprint 12 prep [DEFERRED]**. Not user-actionable
+today, but at least it doesn't render a broken Manage-billing button.
 
-### Free-tier `/pricing` CTA links to repo root
+### [DONE] Free-tier `/pricing` CTA links to repo root
 
 **Added:** Section D Commit 2 implementation, 2026-04-30.
 
 The Free tier's "Self-host on GitHub" CTA links to
 `https://github.com/jamshedq/authently` — the repo root README.
 
-**Sprint 12 follow-up:** add a top-level `## Self-hosting` section to
-`README.md` (or a separate `docs/SELF_HOSTING.md`) before the Phase 1
-launch. Right now the repo root README is short on operational detail;
-sending a self-host-curious user there leaves them figuring it out from
-docker/compose files. Tracked here so it doesn't get lost.
+**Sprint 12 follow-up [DEFERRED]:** add a top-level `## Self-hosting`
+section to `README.md` (or a separate `docs/SELF_HOSTING.md`) before
+the Phase 1 launch. Right now the repo root README is short on
+operational detail; sending a self-host-curious user there leaves them
+figuring it out from docker/compose files. Tracked here so it doesn't
+get lost.
 
-### Test infrastructure: `apps/web` vitest harness + `test:web` gate
+### [DONE] Test infrastructure: `apps/web` vitest harness + `test:web` gate
 
 **Added:** Section D Commit 2 implementation, 2026-04-30.
 
@@ -312,7 +321,7 @@ Future API routes (D-other-routes, Sprint 03+) reuse this harness. The
 one-time cost of the harness is paid; subsequent route tests are
 checkout/portal-style copies.
 
-### Service-role allow-list expansion
+### [DONE] Service-role allow-list expansion
 
 **Discovered:** Section D Commit 2 implementation review, 2026-04-30.
 
@@ -355,7 +364,7 @@ column is currently null before writing — preventing accidental
 double-create of Stripe customers if a future code path triggers a
 second pre-creation.
 
-### Manual smoke caught a real bug that integration tests missed
+### [DONE] Manual smoke caught a real bug that integration tests missed
 
 **Discovered:** Section D Commit 2 manual smoke test, 2026-05-01.
 
@@ -461,8 +470,8 @@ test, even when integration tests are exhaustive. The smoke test is
 not redundancy; it's the *first* real end-to-end exercise of the
 boundary.
 
-**Sprint 03 follow-up:** Strengthen `process_stripe_event` period_end
-to monotonic forward-only via a WHERE predicate (mirroring
+**Sprint 03 follow-up [CARRYOVER]:** Strengthen `process_stripe_event`
+period_end to monotonic forward-only via a WHERE predicate (mirroring
 `past_due_since`'s `coalesce(past_due_since, now())` coalesce-on-first
 invariant pattern). Defends against same-subscription out-of-order
 delivery with different period_ends — a strictly stronger guarantee
