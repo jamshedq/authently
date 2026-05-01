@@ -20,7 +20,7 @@
 
 // PATCH /api/ws/[slug]/members/[userId] body schema. Only the
 // non-owner roles are assignable here — promote-to-owner is the
-// Sprint 03 transfer-ownership flow.
+// ownership transfer flow (Sprint 04 A2).
 
 import { z } from "zod";
 

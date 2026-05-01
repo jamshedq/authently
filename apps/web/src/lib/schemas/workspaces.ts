@@ -54,3 +54,13 @@ export const UpdateWorkspaceSchema = z
     message: "Provide at least one field to update",
   });
 export type UpdateWorkspaceInput = z.infer<typeof UpdateWorkspaceSchema>;
+
+// Sprint 04 A2 — body for POST /api/ws/[slug]/ownership-transfer (initiate).
+// Accept and cancel routes don't take a body; they resolve the pending
+// transfer from the URL slug + auth.uid() inside the worker.
+export const InitiateOwnershipTransferSchema = z.object({
+  toUserId: z.string().uuid("toUserId must be a UUID"),
+});
+export type InitiateOwnershipTransferInput = z.infer<
+  typeof InitiateOwnershipTransferSchema
+>;

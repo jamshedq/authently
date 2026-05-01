@@ -84,8 +84,8 @@ function canAssign(
   // Self-row never offers role-change or remove (use leave instead).
   if (isSelf) return { canChangeRole: false, canRemove: false, allowed: [] };
 
-  // Owner targets are out of bounds for everyone here — Sprint 03
-  // transfer flow handles owner role changes.
+  // Owner targets are out of bounds for everyone here — the ownership
+  // transfer flow (Sprint 04 A2) handles owner role changes.
   if (targetRole === "owner") {
     return { canChangeRole: false, canRemove: false, allowed: [] };
   }
@@ -281,7 +281,7 @@ export function MemberRow({
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Last owner — transfer ownership first (available in Sprint 03).
+                  Last owner — transfer ownership first via Workspace settings.
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

@@ -41,6 +41,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_ownership_transfer_impl: {
+        Args: { _transfer_id: string }
+        Returns: undefined
+      }
+      cancel_ownership_transfer_impl: {
+        Args: { _transfer_id: string }
+        Returns: undefined
+      }
       create_workspace_for_user: {
         Args: { _name: string; _user_id: string }
         Returns: string
@@ -67,6 +75,10 @@ export type Database = {
       has_workspace_role: {
         Args: { _roles: string[]; _workspace_id: string }
         Returns: boolean
+      }
+      initiate_ownership_transfer_impl: {
+        Args: { _to_user_id: string; _workspace_id: string }
+        Returns: string
       }
       is_workspace_member: { Args: { _workspace_id: string }; Returns: boolean }
       process_stripe_event_impl: {
@@ -263,6 +275,44 @@ export type Database = {
           },
         ]
       }
+      workspace_ownership_transfers: {
+        Row: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          created_at: string
+          from_user_id: string
+          id: string
+          to_user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          from_user_id: string
+          id?: string
+          to_user_id: string
+          workspace_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          to_user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_ownership_transfers_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           created_at: string
@@ -323,6 +373,14 @@ export type Database = {
           workspace_slug: string
         }[]
       }
+      api_accept_ownership_transfer: {
+        Args: { _transfer_id: string }
+        Returns: undefined
+      }
+      api_cancel_ownership_transfer: {
+        Args: { _transfer_id: string }
+        Returns: undefined
+      }
       api_create_workspace: {
         Args: { _name: string }
         Returns: {
@@ -338,6 +396,10 @@ export type Database = {
         Returns: undefined
       }
       api_ensure_my_workspace: { Args: never; Returns: string }
+      api_initiate_ownership_transfer: {
+        Args: { _to_user_id: string; _workspace_id: string }
+        Returns: string
+      }
       api_list_workspace_members: {
         Args: { _workspace_slug: string }
         Returns: {
