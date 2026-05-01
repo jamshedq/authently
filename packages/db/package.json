@@ -15,9 +15,10 @@
     "new": "tsx scripts/new-migration.ts",
     "lint": "echo 'lint not yet wired (Sprint 01, Step 4)' && exit 0",
     "test": "echo 'no non-RLS tests in @authently/db yet (run pnpm test:rls for the RLS gate)' && exit 0",
-    "test:rls": "vitest run tests/rls",
-    "test:auth": "vitest run tests/auth",
-    "test:billing": "vitest run tests/billing",
+    "test:db": "vitest run",
+    "test:rls": "vitest run --project rls",
+    "test:auth": "vitest run --project auth",
+    "test:billing": "vitest run --project billing",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
