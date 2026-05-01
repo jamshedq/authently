@@ -220,3 +220,94 @@ The convention now reads:
 
 Documented in CLAUDE.md (project root) so the convention persists
 across sessions.
+
+## Section D Commit 2 — design deviations + follow-ups
+
+### Routes: `/api/ws/[slug]/billing/*` instead of `/api/billing/*` (vs. spec D2/D3)
+
+**Discovered:** Section D Commit 2 planning, 2026-04-30.
+
+The Sprint 02 spec D2/D3 listed the billing routes as
+`POST /api/billing/checkout` and `POST /api/billing/portal`. By the time
+Section D Commit 2 began, every other Sprint 02 API route had landed
+under `/api/ws/[workspaceSlug]/*` (members, invitations, info, member-management,
+etc.). Putting billing under `/api/billing/*` would have required a
+separate body-driven slug resolver and would have made `withMembership`
+unusable as-is.
+
+We deviated to `/api/ws/[workspaceSlug]/billing/checkout` and
+`/api/ws/[workspaceSlug]/billing/portal`. Pattern-consistent, slug-driven
+auth + role gating via `withMembership({ requireRole: ['owner'] })`,
+zero new middleware. Same lesson as Section D Commit 1's schema-choice
+deviation: pattern consistency outweighs spec-text adherence when the
+spec was written before the pattern crystallized.
+
+### Stripe customer pre-creation pattern
+
+**Added:** Section D Commit 2 implementation, 2026-04-30.
+
+Originally planned as "let Stripe auto-create the customer at checkout
+session time." On review, this leaves the resulting Stripe `customer.*`
+record without `metadata.workspace_id`, making support debugging from
+the Stripe Dashboard side require a session/subscription cross-reference
+(neither of which is the resource ops would search by first).
+
+Pre-create instead: `apps/web/src/services/billing/create-checkout-session.ts`
+calls `stripe.customers.create({ metadata: { workspace_id }})` if
+`workspace.stripe_customer_id` is null, then persists the new customer
+ID via `public.svc_set_workspace_stripe_customer` (migration
+`20260430234723_set_workspace_stripe_customer`) before opening the
+Checkout session. The persistence makes retries (network blip, double-
+click, sequential failed checkouts) idempotent — a workspace ends up
+with at most one Stripe customer.
+
+Trade-off: one extra Stripe API call per first-time checkout. Worth it
+for the metadata cleanliness and the support-debugging payoff.
+
+### Past-due banner edge case: workspace with no `stripe_customer_id`
+
+**Added:** Section D Commit 2 implementation, 2026-04-30.
+
+The banner's primary CTA opens the Stripe Customer Portal, which requires
+a `stripe_customer_id`. A `past_due` workspace with `stripe_customer_id IS NULL`
+shouldn't exist in normal flow (the customer is pre-created at first
+checkout — see preceding entry), but could exist from Sprint 01 manual
+seed data, an interrupted checkout, or a Stripe-side anomaly.
+
+Banner branches in this case: shows "Contact support" with a `mailto:`
+link to a placeholder address. Real `support@authently.io` (or whatever
+support address ships) is Sprint 12 prep. Not user-actionable today,
+but at least it doesn't render a broken Manage-billing button.
+
+### Free-tier `/pricing` CTA links to repo root
+
+**Added:** Section D Commit 2 implementation, 2026-04-30.
+
+The Free tier's "Self-host on GitHub" CTA links to
+`https://github.com/jamshedq/authently` — the repo root README.
+
+**Sprint 12 follow-up:** add a top-level `## Self-hosting` section to
+`README.md` (or a separate `docs/SELF_HOSTING.md`) before the Phase 1
+launch. Right now the repo root README is short on operational detail;
+sending a self-host-curious user there leaves them figuring it out from
+docker/compose files. Tracked here so it doesn't get lost.
+
+### Test infrastructure: `apps/web` vitest harness + `test:web` gate
+
+**Added:** Section D Commit 2 implementation, 2026-04-30.
+
+Section D Commit 2 introduced the first apps/web integration tests
+(billing checkout/portal route handlers + service unit tests). Required
+new infrastructure:
+
+- `apps/web/vitest.config.ts` — shares `.env.test` with `packages/db` so
+  CI runs against the same local Supabase fixture
+- `apps/web/tests/setup.ts` — env validation + NEXT_PUBLIC_* mirroring
+- `apps/web/tests/helpers/{test-workspace,stripe-mock,server-client-mock}.ts`
+  — fixture creation, Stripe SDK mock module, mockable
+  `createSupabaseServerClient`
+- `pnpm test:web` script (root + apps/web) — added as the 7th local gate
+
+Future API routes (D-other-routes, Sprint 03+) reuse this harness. The
+one-time cost of the harness is paid; subsequent route tests are
+checkout/portal-style copies.
