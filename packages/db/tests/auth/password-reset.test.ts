@@ -28,18 +28,24 @@ import { TestUserPool } from "../helpers/test-user.ts";
 
 // Section A1 (password reset) — end-to-end against local Supabase + Mailpit.
 //
-// Supabase's default recovery email template uses the implicit flow:
-// the recovery link, when followed, redirects to `redirectTo` with
-// access_token + refresh_token in the URL fragment (NOT a query
-// `?code=...`). The browser-side /reset-password page handles this via
-// supabase.auth.setSession; the test mimics that handshake directly.
+// Sprint 04 B1 migrated the recovery email template to a PKCE-style flow.
+// The recovery link now goes to
+//   `<site>/auth/confirm?token_hash=...&type=recovery&next=/reset-password`
+// and the session is established by a server-side `verifyOtp({ token_hash,
+// type })` exchange. There is no application-managed code_verifier; the
+// token_hash itself is the credential.
+//
+// The /auth/confirm route handler is covered by apps/web/tests/api/auth/
+// confirm.test.ts. This test stays at the supabase-js abstraction level —
+// the same level the original implicit-flow test used — and exercises the
+// direct path that the route handler dispatches to internally:
 //
 // The flow we're exercising:
 //   1. anon: resetPasswordForEmail({ email, redirectTo })
 //   2. Mailpit receives the email
-//   3. fetch the verify URL with redirect:manual; parse the Location's
-//      fragment to recover access_token + refresh_token
-//   4. anon: setSession({ access_token, refresh_token }) → session active
+//   3. extract the /auth/confirm URL from the email body, parse the
+//      `token_hash` query param
+//   4. anon: verifyOtp({ token_hash, type: 'recovery' })  → session active
 //   5. anon (now authed): updateUser({ password: NEW })
 //   6. signOut + signIn(NEW)  → success
 //   7. signIn(OLD)            → error
@@ -49,8 +55,12 @@ import { TestUserPool } from "../helpers/test-user.ts";
 // covers the synthetic-invalid-token rejection instead.
 
 const NEW_PASSWORD = "NewSecurePassword456!";
-// Site URL — must match an entry in supabase/config.toml's
-// additional_redirect_urls (we added http://localhost:3000/** there).
+// Site URL for the redirectTo passthrough. Even under PKCE, Supabase
+// validates `redirectTo` against the URL allowlist (see
+// supabase/config.toml [auth].additional_redirect_urls); the new email
+// template ignores it for URL construction (the template uses
+// `{{ .SiteURL }}` which expands to [auth].site_url, currently
+// 127.0.0.1:3000) but the parameter must still pass the allowlist.
 const SITE_URL = "http://localhost:3000";
 
 describe("password reset flow (A1)", () => {
@@ -72,7 +82,7 @@ describe("password reset flow (A1)", () => {
     });
     expect(reqResult.error).toBeNull();
 
-    // 2. Wait for Inbucket to receive
+    // 2. Wait for Mailpit to receive
     const message = await fetchLatestMessage({
       email: user.email,
       timeoutMs: 5_000,
@@ -80,40 +90,33 @@ describe("password reset flow (A1)", () => {
     const body = message.HTML !== "" ? message.HTML : message.Text;
     expect(body.length).toBeGreaterThan(0);
 
-    // 3. Extract the verify URL from the email body, follow it with
-    //    redirect:manual, and parse access_token + refresh_token from the
-    //    Location header's URL fragment (implicit flow).
-    const verifyMatch = body.match(
-      /https?:\/\/[^"\s>]+\/auth\/v1\/verify\?[^"\s>]+/,
+    // 3. Extract the /auth/confirm URL from the email body. Tolerant
+    //    regex matches either localhost or 127.0.0.1 — `{{ .SiteURL }}`
+    //    in the template expands to whatever [auth].site_url is in
+    //    config.toml, which may differ from the redirectTo origin.
+    const confirmMatch = body.match(
+      /https?:\/\/(?:localhost|127\.0\.0\.1):\d+\/auth\/confirm\?[^"\s>]+/,
     );
-    expect(verifyMatch).not.toBeNull();
-    const verifyUrl = verifyMatch![0]!.replace(/&amp;/g, "&");
+    expect(confirmMatch).not.toBeNull();
+    const confirmUrl = confirmMatch![0]!.replace(/&amp;/g, "&");
+    const confirmParams = new URL(confirmUrl).searchParams;
+    const tokenHash = confirmParams.get("token_hash");
+    const linkType = confirmParams.get("type");
+    const linkNext = confirmParams.get("next");
+    expect(tokenHash).not.toBeNull();
+    expect(linkType).toBe("recovery");
+    expect(linkNext).toBe("/reset-password");
 
-    const verifyRes = await fetch(verifyUrl, { redirect: "manual" });
-    expect([301, 302, 303, 307, 308]).toContain(verifyRes.status);
-    const location = verifyRes.headers.get("location");
-    expect(location).not.toBeNull();
-
-    const fragmentIndex = location!.indexOf("#");
-    expect(fragmentIndex).toBeGreaterThan(-1);
-    const fragment = location!.slice(fragmentIndex + 1);
-    const fragParams = new URLSearchParams(fragment);
-    const accessToken = fragParams.get("access_token");
-    const refreshToken = fragParams.get("refresh_token");
-    const type = fragParams.get("type");
-    expect(accessToken).not.toBeNull();
-    expect(refreshToken).not.toBeNull();
-    expect(type).toBe("recovery");
-
-    // 4. Establish session on a fresh anon client via setSession (mimics
-    //    what the browser-side /reset-password page does on mount).
+    // 4. Establish session via verifyOtp on a fresh anon client. This
+    //    is what /auth/confirm dispatches to server-side; calling it
+    //    directly mirrors that handshake at the supabase-js level.
     const reset = createAnonClient();
-    const setRes = await reset.auth.setSession({
-      access_token: accessToken!,
-      refresh_token: refreshToken!,
+    const verifyRes = await reset.auth.verifyOtp({
+      token_hash: tokenHash!,
+      type: "recovery",
     });
-    expect(setRes.error).toBeNull();
-    expect(setRes.data.session).not.toBeNull();
+    expect(verifyRes.error).toBeNull();
+    expect(verifyRes.data.session).not.toBeNull();
 
     // 5. Update password with the active session
     const updateRes = await reset.auth.updateUser({ password: NEW_PASSWORD });
@@ -139,10 +142,12 @@ describe("password reset flow (A1)", () => {
 
   test("invalid token is rejected (no session created)", async () => {
     const anon = createAnonClient();
-    // A syntactically-plausible but unrecognised access_token + refresh_token.
-    const res = await anon.auth.setSession({
-      access_token: "this-is-not-a-real-jwt",
-      refresh_token: "neither-is-this",
+    // A syntactically-plausible but unrecognised token_hash. Under PKCE
+    // recovery, verifyOtp is the surface that validates the email-link
+    // credential — mirrors the path /auth/confirm dispatches to.
+    const res = await anon.auth.verifyOtp({
+      token_hash: "this-is-not-a-real-token-hash",
+      type: "recovery",
     });
     expect(res.error).not.toBeNull();
     expect(res.data.session).toBeNull();
