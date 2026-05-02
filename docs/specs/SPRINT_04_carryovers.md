@@ -14,6 +14,13 @@
 #   - 28f55cf  feat: PKCE migration (B1)
 #   - fe437c7  chore: stale Sprint 03 reference cleanup
 #
+# === Status markers ===
+# Items cleared in subsequent sprints retain their entry here for
+# historical reference, prefixed with a STATUS line naming the sprint
+# + sub-item that cleared them. Items reachable but not yet shipped
+# may carry a STATUS line of "ready for SNN+ implementation" (e.g.,
+# #4 below, post-Sprint-05 spec-lock 2026-05-02).
+#
 # === Entry schema ===
 # Each entry uses: (a) what's deferred, (b) why deferred + origin commit,
 # (c) approximate scope, (d) dependencies, (e) urgency-tell. Where (e)
@@ -22,16 +29,16 @@
 # prevents future readers from wondering whether the absence means
 # "no tell" or "didn't think about it."
 #
-# === Dependency tree ===
-# The Sprint 05+ scheduled hard-delete sweeper is the keystone for
-# cleanup work. Several items below are downstream consumers.
+# === Dependency tree (updated 2026-05-02 after Sprint 05 spec-lock) ===
 #
-#   Sprint 05+ scheduled hard-delete sweeper (#1)
-#      ├──> enables: Stripe subscription cancellation for soft-deleted
-#      │             workspaces (#3) — both A1 direct-delete and A3
-#      │             cascade are input paths to the same cleanup
-#      └──> enables: hard-delete of ghost (non-owner) memberships
-#                   post account deletion (#4)
+#   Sprint 05 A1: hard-delete sweeper (workspaces) — CLEARED
+#      ├──> CLEARED: #3 Stripe cancellation via Sprint 05 A2 (same
+#      │             Trigger.dev task body; both A1 direct-delete and
+#      │             A3 cascade are input paths)
+#      └──> READY S06+: #4 extend sweeper scope to auth.users for
+#                       ghost membership cleanup (Sprint 05's sweeper
+#                       covers workspaces only; auth.users hard-delete
+#                       is the S06+ extension)
 #
 #   Independent of the sweeper:
 #      ├──> Revoke-all-sessions on account delete (#2)
@@ -50,6 +57,8 @@
 # === Sprint 04 origin ===
 
 # 1. Sprint 05+ scheduled hard-delete sweeper for soft-deleted workspaces
+#    STATUS: CLEARED by Sprint 05 A1 (commit hash filled in at sprint
+#       close per the build_plan.md §5.2 amendment convention).
 #    What: scheduled job that hard-deletes workspaces with
 #       deleted_at < now() - interval '24 hours'. FK cascades sweep
 #       workspace_members, workspace_invitations, billing rows.
@@ -88,6 +97,9 @@
 #       also flag the gap.
 
 # 3. Stripe subscription cancellation for soft-deleted workspaces
+#    STATUS: CLEARED by Sprint 05 A2 (paired with A1 in the same
+#       Trigger.dev task body; commit hash filled in at sprint close
+#       per the build_plan.md §5.2 amendment convention).
 #    What: cancel active Stripe subscriptions when a workspace is
 #       soft-deleted, regardless of which path soft-deleted it.
 #       Two input paths produce the same cleanup need:
@@ -111,6 +123,13 @@
 #       tips both items together.
 
 # 4. Hard-delete cleanup of ghost memberships post account deletion
+#    STATUS: READY for S06+ implementation. Sprint 05's sweeper (#1)
+#       covers workspaces only; #4's scope is to extend the sweeper
+#       to also reap auth.users rows for accounts where
+#       user_profiles.deleted_at crosses a TTL (FK cascade on
+#       workspace_members fires automatically once auth.users is
+#       hard-deleted). Now unblocked because A1's sweeper machinery
+#       exists; the extension is additive.
 #    What: when an account is soft-deleted via user_profiles.deleted_at,
 #       the user's non-owner memberships are intentionally preserved
 #       (locked Q6 of A3 — soft-delete is reversible-in-principle;
@@ -124,8 +143,10 @@
 #    Scope: trivial once #1 is wired — the sweeper hard-deletes
 #       auth.users rows for accounts where user_profiles.deleted_at
 #       crosses a TTL; FK cascade on workspace_members fires.
-#    Dependencies: requires #1 (sweeper extended to also reap
-#       accounts).
+#    Dependencies: Sprint 05 A1 sweeper exists (cleared); S06+
+#       extension adds the auth.users reaper alongside the existing
+#       workspaces reaper (likely the same Trigger.dev task with a
+#       second per-row loop).
 #    Urgency-tell: a member of an affected workspace reports
 #       "deleted accounts still appear in our member list." UX leak
 #       is bounded but visible.
