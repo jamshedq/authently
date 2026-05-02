@@ -45,6 +45,14 @@ export type Database = {
         Args: { _transfer_id: string }
         Returns: undefined
       }
+      account_blocking_workspaces: {
+        Args: { _user_id: string }
+        Returns: {
+          id: string
+          name: string
+          slug: string
+        }[]
+      }
       cancel_ownership_transfer_impl: {
         Args: { _transfer_id: string }
         Returns: undefined
@@ -53,6 +61,7 @@ export type Database = {
         Args: { _name: string; _user_id: string }
         Returns: string
       }
+      delete_account_impl: { Args: never; Returns: undefined }
       delete_workspace_impl: {
         Args: { _workspace_id: string }
         Returns: undefined
@@ -196,6 +205,21 @@ export type Database = {
           created_at?: string
           plan_tier?: string
           stripe_price_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          deleted_at: string | null
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string | null
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -391,6 +415,7 @@ export type Database = {
           template: string
         }[]
       }
+      api_delete_account: { Args: never; Returns: undefined }
       api_delete_workspace: {
         Args: { _workspace_id: string }
         Returns: undefined
@@ -418,6 +443,14 @@ export type Database = {
           status: string
           workspace_name: string
           workspace_slug: string
+        }[]
+      }
+      api_my_blocking_workspaces: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+          slug: string
         }[]
       }
       api_revoke_invitation: {
