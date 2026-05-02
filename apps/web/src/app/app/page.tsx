@@ -28,9 +28,9 @@
 //      layout on every visit to /app/[slug]/*).
 //   2. If the slug names a workspace the caller is still a member of,
 //      redirect there.
-//   3. Otherwise, redirect to the first membership in the list. Order
-//      is whatever Postgres returns; we don't track "most-recently-
-//      active" yet (Sprint 03+).
+//   3. Otherwise, redirect to the first membership in the list, which
+//      `getCurrentUserWithMemberships` returns in `last_active_at desc`
+//      order — the most recently active workspace surfaces first.
 //
 // The cookie does NOT grant access — even if it's tampered with, the
 // membership-list check before redirect ensures the user only ever

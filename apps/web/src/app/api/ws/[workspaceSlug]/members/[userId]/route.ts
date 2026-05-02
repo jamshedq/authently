@@ -23,8 +23,10 @@
 //
 // Both gated to owner/admin via withMembership requireRole. The
 // finer actor-vs-target matrix (admins can only touch editor/viewer;
-// owner-vs-owner removal blocked pending Sprint 03 transfer flow) lives
-// in the service layer. The DB last-owner trigger guards regardless.
+// owner removal goes through the ownership-transfer flow at
+// /api/ws/[slug]/ownership-transfer — Sprint 04 A2 — not this DELETE)
+// lives in the service layer. The DB last-owner trigger guards
+// regardless.
 
 import { NextResponse } from "next/server";
 import { withMembership } from "@/lib/api/with-membership";
