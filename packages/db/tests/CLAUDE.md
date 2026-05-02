@@ -57,3 +57,40 @@ Every new `public.*` SECURITY DEFINER function gets a perimeter test:
 
 See `tests/billing/process-stripe-event-rls.test.ts` for the canonical
 shape.
+
+## Write-path convention: DEFINER RPCs as sole write path
+
+For tables that gate on multi-row or cross-table invariants, **SECURITY
+DEFINER RPCs are the sole write path**. RLS on those tables is
+SELECT-only; INSERT/UPDATE/DELETE are revoked from `authenticated` (and
+`anon`), and mutations are routed through `private.*_impl` workers
+wrapped by `public.api_*` functions granted to `authenticated` only.
+
+**Why.** Check-and-mutate logic stays in SQL — single function-level
+transaction, no TOCTOU window between an application-layer check and a
+write. The service-role key is never expanded for this. The grants on
+`authenticated` stay narrow and auditable: SELECT on the table, EXECUTE
+on the wrapper, nothing else.
+
+**Read/write split rule.** SELECT policies on the table express what
+authenticated users can *see*. Mutations are not expressed as RLS
+policies — they're expressed as DEFINER functions that read
+`auth.uid()` themselves, validate the relevant invariants (caller is
+owner, target is a member, workspace not soft-deleted, etc.), then
+write.
+
+**Current examples** (cite the migration where each lands):
+- `public.workspaces` soft-delete — Sprint 04 A1, migration
+  `20260501224734_workspaces_soft_delete.sql`
+- `public.workspace_ownership_transfers` — Sprint 04 A2, migration
+  `20260501231519_workspace_ownership_transfers.sql`
+- `public.user_profiles` — Sprint 04 A3, migration
+  `20260501234834_account_deletion.sql`
+
+**Forward note.** New tables that introduce mutation should follow this
+pattern by default. If a table genuinely needs RLS-driven writes (the
+invariants are single-row and reducible to `auth.uid()` membership
+predicates, e.g. the existing `workspaces.name` UPDATE via
+`workspaces_owner_admin_update` policy), the migration header should
+say so explicitly. The reason gets captured at write time, not
+discovered later from the absence of the pattern.
