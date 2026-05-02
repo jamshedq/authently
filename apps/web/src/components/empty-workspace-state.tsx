@@ -20,9 +20,10 @@
 
 // Section B3 — empty-state surface for users with zero workspace
 // memberships. In the normal flow the sign-up trigger creates one, so
-// this branch is reached only as recovery (workspace deleted while the
-// user wasn't a member of any other — Sprint 03+ will surface this
-// route deliberately when delete lands).
+// this branch is reached as recovery: workspace deleted (Sprint 04 A1)
+// while the user wasn't a member of any other. Post-delete redirect
+// in delete-workspace-dialog.tsx targets /app, which renders this
+// component when the membership list is empty.
 //
 // Client Component because it owns the Create-Workspace dialog's
 // open/closed state. The Server Component caller renders the page shell

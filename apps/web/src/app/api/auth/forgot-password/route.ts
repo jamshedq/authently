@@ -30,7 +30,8 @@
 // service, which routes through Inbucket in local dev (port 54324) and
 // Supabase's hosted SMTP in production. Resend is wired for invitations
 // (Section C) but NOT yet for password reset; configuring Supabase to
-// send via Resend SMTP is deferred to Sprint 03+ if needed.
+// send recovery emails via Resend SMTP is deferred until Resend domain
+// verification ships — see SPRINT_04_carryovers.md.
 
 import { NextResponse } from "next/server";
 import { withErrorHandling } from "@/lib/api/handler";
