@@ -12,7 +12,7 @@ Source baseline: build_plan_v2.docx, validated April 2026.
 
 Open-source AI content engine — authenticity-first, power-user, multi-audience
 
-*14 months · 28 sprints · AGPL core + hosted product · validated April 2026*
+*14 months · 28 sprints · AGPL core + hosted product · validated April 2026 · amended May 2026 (post-Sprint-04)*
 
 # 0. Strategic positioning
 
@@ -252,9 +252,31 @@ Two-week sprints. Cowork column shows primary working mode: 🤖 Cowork-ready, �
 
 ## 5.1 Phase gates (non-negotiable)
 
-- **End of Sprint 12 (month 6): **OSS public release + paid hosted launch. 5 platforms, Authenticity Engine, public API, MCP server, n8n+Make nodes all live. Free-OSS / $49 Solo / $129 Studio tiers active.
-- **End of Sprint 20 (month 10): **Pro tier with video + BYO-key. Public roadmap, contributor program, dev-community campaign live. If OSS metrics (stars, contributors, self-host installs) are weak, pivot to API-first dev-tool focus before Phase 3.
-- **End of Sprint 28 (month 14): **Agency tier launch. 9 platforms, inbox, vault, translation, link-in-bio, mobile PWA. Commercial license offering for enterprises.
+- **End of Sprint 12 (month 6):** OSS public release + paid hosted launch. 5 platforms, Authenticity Engine, public API, MCP server, n8n+Make nodes all live. Free-OSS / $49 Solo / $129 Studio tiers active.
+- **End of Sprint 20 (month 10):** Pro tier with video + BYO-key. Public roadmap, contributor program, dev-community campaign live. If OSS metrics (stars, contributors, self-host installs) are weak, pivot to API-first dev-tool focus before Phase 3.
+- **End of Sprint 28 (month 14):** Agency tier launch. 9 platforms, inbox, vault, translation, link-in-bio, mobile PWA. Commercial license offering for enterprises.
+
+## 5.2 Sprint plan amendments
+
+This section captures the gap between the §5 sprint table (canonical-as-planned) and the actual ship state as the plan unfolds. The §5 table itself is preserved as the original 28-sprint roadmap; this section records where reality has updated the plan. The convention is exceptions-only — sprints whose actual deliverables match the original plan are not listed, only those whose actual state diverges. Sprints 01–02 shipped as planned and are not listed here. The full deferral index lives in `SPRINT_04_carryovers.md`; the amendments below surface only the structural drift that bears on Phase 1 / Phase 2 risk.
+
+| **Sprint** | **Original plan** | **Actual state** | **Notes** |
+|---|---|---|---|
+| S03 | Source ingestion: yt-dlp worker, Whisper, Trafilatura, pdfplumber, file upload UI | Deferred — none of the ingestion stack shipped in S03; the sprint was re-scoped to workspace + RBAC follow-on work (workspace_members activity tracking, billing predicate hardening, parallelised DB suites) | Original ingestion deliverables re-scheduled into Sprint 05+; see `SPRINT_04_carryovers.md` |
+| S04 | Public REST API v1 + Voice Profile foundation: API keys per WS, OpenAPI spec, voice fingerprint extraction from past posts | Partial — workspace lifecycle shipped (soft-delete, ownership transfer, account deletion in A1/A2/A3) and PKCE-style password recovery shipped in B1; the planned API + voice-fingerprint deliverables did not ship | Voice fingerprint and public REST API v1 carried into Sprint 05+; see `SPRINT_04_carryovers.md`. The single-owner workspace constraint stands and pairs with the multi-owner gap surfaced below |
+| S05 | Remix engine v1 + Authenticity Engine: voice-aware prompts, multi-model router (Claude/GPT/o3), anti-slop guards, BYO-key support | Re-scoped — original S05 deliverables presume S03 ingestion + S04 voice fingerprint as upstream dependencies, neither of which has shipped | Recommended Sprint 05 covers ingestion catch-up plus the highest-priority Sprint 04 carryover items (sweeper, Stripe cancellation); confirmation belongs at Sprint 05 spec-lock |
+
+### Multi-owner workspace — structural gap
+
+The build plan does not currently represent workspace co-ownership anywhere. Sprint 04 A2 shipped ownership transfer with a single-owner constraint as its structural premise — the partial unique index on `workspace_ownership_transfers` and the atomic role swap inside the accept worker both assume exactly one owner per workspace at any given time. That constraint is fine for Phase 1 individual-creator workflows but becomes a hard problem for Phase 2 SMB approval flows and a forcing function for the Phase 3 agency tier. The most defensible technical fit is Sprint 18 (approval workflows + draft diffing), since approval flows already carry multi-actor semantics that pair naturally with multi-owner. This is a recommendation, not a lock; the placement decision belongs at Sprint 18's spec-lock cycle.
+
+### Phase 1 launch gate (S12) — concentration risk
+
+S12 currently carries the densest deliverable list in the entire plan: TikTok adapter, n8n + Make community nodes, Content Posting API audit prep, failed-post UX, onboarding, basic analytics, plus the OSS launch and the paid hosted launch themselves. The §5.1 phase-gate language treats these as a single ship event — five platforms, Authenticity Engine, public API, MCP server, n8n+Make nodes all live at end of S12. If upstream sprints slip (and post-Sprint-04 the plan has already absorbed one sprint of slip via the S05 re-scope), the gate slips. The recommendation is to anchor an explicit S12 readiness check at Sprint 09 or Sprint 10 spec-lock, with the mechanics — what gets checked, what triggers a stop, who runs it — settled in the relevant sprint's spec rather than prescribed here.
+
+### Carryover index
+
+`SPRINT_04_carryovers.md` is the canonical deferral index; entries there carry their own urgency-tells and dependency notes. The build plan calls out only items whose placement materially shifts Phase 1 or Phase 2 risk: Stripe cancellation (Phase 1 paywall correctness — must land before any S12 launch), Resend domain + SMTP (Phase 1 hosted-launch deliverability — must land before S12 or the launch sends email from a generic shared sender), and the multi-owner workspace gap surfaced above. Everything else stays in the carryovers doc and gets scheduled at the relevant sprint's spec-lock.
 
 # 6. Distribution plan (5–10 hrs/week, all 14 months)
 
