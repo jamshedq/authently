@@ -138,6 +138,36 @@ If a task is ambiguous or a decision isn't documented, STOP and ask the human. D
 - Anything that affects the OSS / proprietary boundary
 - Anything that affects the Authenticity Engine's user-visible behavior
 
+## Escalation signals
+
+Each report ends with a textual signal that tells the user (and the review layer behind their prompt-drafting) whether escalation is needed before the next prompt. The signals are short by design — they're routing markers, not commentary.
+
+When ending a report, use one of these:
+
+- **Standing by for the next prompt** — execution clean, no decisions surfaced. Review layer not needed.
+- **Standing by for lock** / **Open question:** / **Design question:** — explicit decision request. Recommend bringing in the review layer before the next prompt.
+- **Surface:** / **Flagging:** / **Worth flagging:** — soft escalation; content matters more than the signal. Review layer optional but recommended for non-trivial content.
+
+When using **Standing by for lock** / **Open question** / **Design question**, also include an explicit recommendation line in the report (e.g., *"recommend bringing in the review layer before the next prompt"*). Visible escalation beats inferred escalation.
+
+Escalate (using one of the lock signals) when:
+
+- A sprint is starting — every spec-lock kickoff is an escalation point.
+- A mid-sprint design question surfaces — the choice should be confirmed, not guessed.
+- Drift from a locked spec is noticed — the locked plan and the current prompt or current code don't match.
+- A failure mode isn't immediately obvious — root cause unclear at first glance.
+- A decision is product-vs-execution — two reasonable people could disagree about the right answer.
+
+When none of those apply (routine commits in a locked sprint, hygiene with no judgment calls, test fixes with clear root cause, CI re-runs and merge mechanics), the signal is **Standing by for the next prompt** and execution proceeds direct.
+
+Sprint 04 examples that grounded these signals:
+
+- C1 drift — `113f1c1` — Claude surfaced a scope conflict between the locked spec and the user's prompt; review layer locked the deferrals-doc choice rather than letting the conflict be guessed away.
+- B1 false-green — `802998b` → `fca6218` — local gates green, CI red; review-layer-assisted diagnostic phase preceded the fix instead of one diagnose-and-fix swing.
+- A3 atomicity — `e6e3a7f` — design question on transaction shape was surfaced before code, locked, then built.
+
+This convention is part of the Option-A workflow chosen at end of Sprint 04 (per-sprint spec-locks reviewed by the review layer, execution direct between user and Claude). If the workflow mode changes — review layer stepped down to phase-gate-only, or stepped up to per-commit — this section is revisited.
+
 ## Git workflow
 
 - Direct pushes to `main` are blocked by GitHub branch protection.
