@@ -18,8 +18,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DeleteAccountButton } from "@/components/delete-account-button";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getMyBlockingWorkspaces } from "@/services/users/delete-account";
 import { AccountForm } from "./account-form";
 
 // User-scoped, not workspace-scoped — sits alongside /app/[workspaceSlug]
@@ -43,6 +46,14 @@ export default async function AccountPage() {
       ? (user.user_metadata["full_name"] as string)
       : "";
 
+  // Sprint 04 A3 — server-render the β-policy blocking list. Same
+  // predicate the worker uses (private.account_blocking_workspaces, called
+  // via public.api_my_blocking_workspaces). When the list is empty, the
+  // delete button is shown; otherwise we render an inline "you must
+  // resolve these first" block with per-workspace settings links.
+  const blockingWorkspaces = await getMyBlockingWorkspaces(supabase);
+  const email = user.email ?? "";
+
   return (
     <div className="container">
       <div className="mx-auto max-w-2xl space-y-10 py-12">
@@ -65,12 +76,40 @@ export default async function AccountPage() {
             Delete account
           </h2>
           <p className="text-[14px] text-muted-foreground">
-            Permanently delete your Authently account and all data.
-            Available in a future release.
+            Permanently delete your Authently account. Workspaces you solely
+            own will be removed; shared workspaces you own must be transferred
+            or have other members removed first.
           </p>
-          <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 font-mono text-[11px] font-medium uppercase tracking-[0.6px] text-muted-foreground">
-            Coming soon
-          </span>
+          {blockingWorkspaces.length > 0 ? (
+            <div
+              role="note"
+              className="space-y-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-[13px] text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-200"
+            >
+              <p className="font-medium">
+                Resolve these workspaces before deleting your account:
+              </p>
+              <ul className="space-y-1">
+                {blockingWorkspaces.map((ws) => (
+                  <li key={ws.id} className="flex items-center justify-between gap-3">
+                    <span className="truncate">{ws.name}</span>
+                    <Link
+                      href={`/app/${ws.slug}/settings`}
+                      className="shrink-0 text-amber-900 underline-offset-2 hover:underline dark:text-amber-200"
+                    >
+                      Open settings →
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[12px] text-amber-900/80 dark:text-amber-200/80">
+                Either transfer ownership to another member or remove the
+                other members. Once each listed workspace is resolved, this
+                section will offer the delete button.
+              </p>
+            </div>
+          ) : (
+            <DeleteAccountButton email={email} />
+          )}
         </section>
       </div>
     </div>
