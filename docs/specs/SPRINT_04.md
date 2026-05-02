@@ -385,6 +385,9 @@ at the end of Sprint 04.
 
 **Not a deliverable:** any source-ingestion code.
 
+**Amendment (Sprint 04 close):** scope changed during execution; deferrals
+captured in SPRINT_04_carryovers.md.
+
 ---
 
 ## Workflow
