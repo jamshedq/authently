@@ -94,3 +94,52 @@ predicates, e.g. the existing `workspaces.name` UPDATE via
 `workspaces_owner_admin_update` policy), the migration header should
 say so explicitly. The reason gets captured at write time, not
 discovered later from the absence of the pattern.
+
+## Gate-run hygiene: restart services after boot-loaded config changes
+
+When a commit modifies boot-loaded service config, **the local gate run
+is invalid against a still-running service**. Gates passing against a
+daemon that booted with the prior config prove nothing about the
+change. Restart before gates, or treat the green run as untested.
+
+**Why.** The Supabase CLI loads `config.toml` and
+`supabase/templates/*.html` into the relevant service (GoTrue,
+PostgREST, etc.) at `supabase start` time. Edits to those files do not
+hot-reload into the running process — the daemon keeps its boot-time
+view of config until restarted.
+
+**Rule.** Before running gates on a commit that modifies
+`supabase/config.toml`, `supabase/templates/*.html`, or any boot-loaded
+service config: run `supabase stop && supabase start` first. (For
+migration changes, `supabase db reset` is the heavier hammer that also
+reapplies SQL — pick the right tool for what changed.)
+
+**Example.** Sprint 04 B1 (commit `802998b`) migrated the recovery
+email template to a PKCE-style URL and added a new
+`[auth.email.template.recovery]` section in `config.toml`. Local gates
+ran against the still-cached prior template and passed; CI fresh-booted
+GoTrue with the new template, the test's URL regex no longer matched
+the email body, and the suite failed. The resolution landed in
+`fca6218` — the test was rewritten against the new URL shape after a
+service restart confirmed local parity with CI.
+
+**Corollary — call-time vs render-time origin asymmetry.** Boot-loaded
+config can also produce asymmetries between values referenced in code
+and values expanded by templates. `redirectTo` passed to
+`resetPasswordForEmail()` is validated against
+`[auth].additional_redirect_urls`; the email template's
+`{{ .SiteURL }}` expands to `[auth].site_url` — independent fields in
+`config.toml` that need not share an origin
+(`localhost:3000` vs `127.0.0.1:3000`). Tests that assert against email
+contents should tolerate either origin.
+
+**See also — other boot-loaded config to be alert to.**
+- `next.config.js` — read at `next dev` / `next build` start; restart
+  the dev server after edits.
+- `.env*` — read at process start; some dev servers hot-reload, some
+  don't. When in doubt, restart.
+- Vitest config — read at suite start; re-run from a fresh
+  `pnpm test:*` invocation, not from the watcher.
+- Migrations in `packages/db/migrations/` — only loaded by
+  `supabase db reset` or a fresh `supabase start`; running services
+  see the prior schema.
