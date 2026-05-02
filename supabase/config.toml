@@ -62,6 +62,15 @@ double_confirm_changes = true
 enable_confirmations = false
 secure_password_change = false
 
+# Sprint 04 B1 — PKCE-style recovery template (token_hash + verifyOtp at
+# /auth/confirm) replacing the legacy implicit-flow default. NOTE: this
+# section governs LOCAL templates only. The hosted Supabase Dashboard
+# template at Authentication → Email Templates → Reset Password must be
+# updated separately to mirror supabase/templates/recovery.html.
+[auth.email.template.recovery]
+subject = "Reset your Authently password"
+content_path = "./supabase/templates/recovery.html"
+
 # Edge functions are out of scope for Sprint 01; disable to keep the local
 # stack lean. Re-enable when Step N introduces edge-runtime work.
 [edge_runtime]

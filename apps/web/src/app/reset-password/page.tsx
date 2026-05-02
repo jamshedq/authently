@@ -18,16 +18,26 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { redirect } from "next/navigation";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ResetPasswordForm } from "./reset-password-form";
 
-// The form Client Component handles the full state machine — reading
-// tokens from the URL fragment, bootstrapping the session, rendering
-// the form, and the invalid-link branch. The page is just the layout
-// shell so the Mintlify chrome (header, container, hero spacing) is
-// consistent with /forgot-password and /login.
+// Sprint 04 B1 — server-side gate. The session is established by
+// /auth/confirm's verifyOtp() before this page renders, so a valid
+// arrival has a logged-in user. No session = no valid recovery link;
+// send the user back to /forgot-password with the same `?error=invalid_link`
+// signal /auth/confirm uses for malformed/expired arrivals.
 export const dynamic = "force-dynamic";
 
-export default function ResetPasswordPage() {
+export default async function ResetPasswordPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/forgot-password?error=invalid_link");
+  }
+
   return (
     <div className="container">
       <div className="mx-auto max-w-md space-y-8 py-20">

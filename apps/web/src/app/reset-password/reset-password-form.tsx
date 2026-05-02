@@ -18,108 +18,23 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// =============================================================================
-// PKCE migration (Sprint 03+)
-// -----------------------------------------------------------------------------
-// This component handles Supabase's IMPLICIT-flow recovery email by reading
-// access_token + refresh_token from the URL fragment in the browser. It works,
-// and the tokens are cleared from the address bar via history.replaceState
-// regardless of success or failure — but it's not the most modern Supabase
-// pattern. To migrate to PKCE (verifyOtp + token_hash):
-//
-//   1. Override the recovery email template in supabase/config.toml:
-//        [auth.email.template.recovery]
-//        subject = "Reset your Authently password"
-//        content_path = "./supabase/templates/recovery.html"
-//      and create supabase/templates/recovery.html with a link of the form:
-//        {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password
-//
-//   2. Add a route handler at apps/web/src/app/auth/confirm/route.ts:
-//        const { error } = await supabase.auth.verifyOtp({ token_hash, type });
-//        return NextResponse.redirect(new URL(next, origin), { status: 303 });
-//      with the same safeNext() open-redirect guard the existing
-//      /auth/callback handler uses.
-//
-//   3. Convert this file back to a Server-Component-driven page that just
-//      checks supabase.auth.getUser() — the session is already established
-//      server-side by /auth/confirm, so there's no fragment to read and no
-//      "processing" phase needed.
-//
-// On the hosted Supabase Dashboard the equivalent template lives at
-// Authentication → Email Templates → "Reset Password". Update the link href
-// the same way; everything else mirrors the local config.
-// =============================================================================
-
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ResetPasswordSchema } from "@/lib/schemas/account";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-
-type Phase = "processing" | "ready" | "invalid";
 
 export function ResetPasswordForm() {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>("processing");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
-
-  // Bootstrap: read tokens from URL fragment (Supabase default email
-  // template uses implicit flow), establish a session via setSession,
-  // then clean the URL so the tokens don't linger in the address bar.
-  // If no fragment is present, fall through to checking for an existing
-  // session — handles the "user reloaded the page" case.
-  useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
-    const hash = window.location.hash.startsWith("#")
-      ? window.location.hash.slice(1)
-      : window.location.hash;
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get("access_token");
-    const refreshToken = params.get("refresh_token");
-    const type = params.get("type");
-
-    let cancelled = false;
-
-    async function run() {
-      if (accessToken && refreshToken && type === "recovery") {
-        const { error: setSessionError } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-        if (cancelled) return;
-        // Clear the fragment unconditionally — on success the tokens have
-        // been consumed and we don't want them in the address bar; on
-        // failure they're already invalid (Supabase rejected them) but
-        // hygiene + browser-history privacy still call for a clean URL.
-        window.history.replaceState({}, "", window.location.pathname);
-        if (setSessionError) {
-          setPhase("invalid");
-          return;
-        }
-        setPhase("ready");
-        return;
-      }
-
-      // No fragment — maybe the user reloaded after a successful exchange.
-      const { data, error: getUserError } = await supabase.auth.getUser();
-      if (cancelled) return;
-      setPhase(getUserError || !data.user ? "invalid" : "ready");
-    }
-
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -142,6 +57,14 @@ export function ResetPasswordForm() {
         ok?: boolean;
         error?: string;
       };
+      if (res.status === 401) {
+        // Session evaporated between the page render and the submit —
+        // most often because the recovery session expired. Send the
+        // user back to /forgot-password rather than render a generic
+        // "couldn't update password" message.
+        router.push("/forgot-password?error=invalid_link");
+        return;
+      }
       if (!res.ok || !body.ok) {
         throw new Error(body.error ?? "Couldn't update password.");
       }
@@ -154,29 +77,6 @@ export function ResetPasswordForm() {
       );
       setIsPending(false);
     }
-  }
-
-  if (phase === "processing") {
-    return (
-      <p className="text-[14px] text-muted-foreground">Verifying link…</p>
-    );
-  }
-
-  if (phase === "invalid") {
-    return (
-      <div className="space-y-4">
-        <p className="text-[14px] text-muted-foreground">
-          This reset link is no longer valid — it may have expired or
-          already been used. Request a new one to try again.
-        </p>
-        <Link
-          href="/forgot-password"
-          className="inline-flex h-9 items-center rounded-full bg-foreground px-4 text-[14px] font-medium text-background transition hover:opacity-90"
-        >
-          Request a new link
-        </Link>
-      </div>
-    );
   }
 
   return (
@@ -219,6 +119,16 @@ export function ResetPasswordForm() {
       <Button type="submit" disabled={isPending} className="w-full">
         {isPending ? "Saving…" : "Save new password"}
       </Button>
+      <p className="text-[13px] text-muted-foreground">
+        Link expired or already used?{" "}
+        <Link
+          href="/forgot-password"
+          className="text-foreground underline-offset-2 hover:underline"
+        >
+          Request a new one
+        </Link>
+        .
+      </p>
     </form>
   );
 }

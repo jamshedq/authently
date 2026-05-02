@@ -55,10 +55,13 @@ export const POST = withErrorHandling(async (request) => {
 
   const { email } = parsed.data;
   const supabase = await createSupabaseServerClient();
-  // Redirect lands directly on /reset-password. Supabase's default email
-  // template uses the implicit flow (tokens in URL fragment), so the
-  // page handles bootstrap client-side; the fragment never reaches the
-  // server. PKCE code-flow (via /auth/callback) is reserved for OAuth.
+  // Sprint 04 B1 — recovery now goes through PKCE-style verifyOtp at
+  // /auth/confirm. The email template (supabase/templates/recovery.html)
+  // constructs the link itself: `{{ .SiteURL }}/auth/confirm?token_hash=…&
+  // type=recovery&next=/reset-password`. The `redirectTo` parameter below
+  // is preserved because Supabase still validates it against the URL
+  // allowlist — removing it would trip a "redirect_to is not allowed"
+  // rejection. The new template ignores it for URL construction.
   const redirectTo = `${env.NEXT_PUBLIC_SITE_URL}/reset-password`;
 
   // Fire-and-log: anti-enumeration requires identical responses across
