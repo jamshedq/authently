@@ -9,7 +9,8 @@
     "deploy": "trigger deploy",
     "build": "trigger deploy --skip-deploy --skip-promotion",
     "lint": "echo 'lint not yet wired (Sprint 01, Step 4)' && exit 0",
-    "test": "echo 'no tests yet (Sprint 01, Step 6+)' && exit 0",
+    "test": "echo 'run pnpm test:jobs for the test suite' && exit 0",
+    "test:jobs": "vitest run tests --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
     "@trigger.dev/build": "4.4.4",
     "@types/node": "^22.10.0",
     "trigger.dev": "^4.4.4",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.5"
   }
 }
