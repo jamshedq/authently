@@ -70,8 +70,9 @@ Same pattern as Sprint 04:
 1. Spec → confirm → build → verify
 2. Pause after each commit lands locally
 3. User reviews against the spec; approves before next commit
-4. All gates green at every commit (5 gates today; 7 gates from B1 forward
-   when `lint:py` + `typecheck:py` are introduced)
+4. All gates green at every commit (6 gates today after S05 A2 C1 lifts
+   `apps/jobs` into the gate set; 8 gates from B1 forward when `lint:py`
+   + `typecheck:py` are introduced)
 5. Branch per section: `chore-sprint-05-section-a` for A1+A2;
    `chore-sprint-05-section-b` for B1–B5 (or split per sub-item if scope
    warrants; lock at section start)
