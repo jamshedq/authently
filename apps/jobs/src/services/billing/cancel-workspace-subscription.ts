@@ -18,46 +18,29 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// =============================================================================
-// Sprint 05 A2 STUB — replace before A2 lands.
+import Stripe from "stripe";
+import { getJobsStripeClient } from "../../lib/stripe.ts";
+
+// Sprint 05 A2 — Stripe subscription cancellation for soft-deleted
+// workspaces. Called from the hard-delete sweeper (and its retry
+// companion) before the finalize RPC removes the workspace from the
+// active billing surface.
 //
-// A1 (sweep-soft-deleted-workspaces task) calls this service per
-// workspace before invoking svc_finalize_workspace_hard_delete. The stub
-// returns { ok: true } unconditionally so A1's commit is CI-green
-// standalone (no Stripe call, no test mode required for A1's tests).
+// Idempotency strategy: pre-read via subscriptions.retrieve, check
+// status === "canceled", short-circuit if already canceled. This was a
+// build-time switch from the originally-locked catch-and-detect path
+// (Sprint 05 A2 pre-flight Q4) — Stripe's already-canceled error
+// predicate was not definitively documented at Context7 verification
+// time, so pre-read against the documented response shape (the canceled
+// subscription object's `status` field) is the more robust contract for
+// an unattended sweeper. 2x API calls per common-path workspace accepted
+// as cost of correctness.
 //
-// A2 replaces the stub body with the real Stripe `subscription.cancel`
-// logic. Locked decisions for A2 (per Sprint 05 spec + A1 pre-flight Q4):
-//
-//   - Cancel mode: immediate (`subscription.cancel(id)`), NOT
-//     `cancel_at_period_end: true`. Aligns with delete-workspace-dialog.tsx
-//     disclosure copy.
-//   - In-flight invoices: no special handling; Stripe's natural mid-period
-//     cancel behavior applies.
-//   - Idempotent: if Stripe reports the subscription is already cancelled,
-//     return { ok: true } (goal state is reached).
-//   - No-Stripe path: workspace.stripe_subscription_id IS NULL → return
-//     { ok: true } without calling Stripe (workspace was on free tier).
-//   - Error shape on Stripe failure: return
-//     { ok: false, error: <message> } so the Trigger.dev caller can route
-//     to svc_record_workspace_sweep_error.
-//   - Stripe SDK + STRIPE_SECRET_KEY env wiring: A2 must add these to
-//     apps/jobs (currently web-only). See "package boundary note" below
-//     for context.
-//
-// A2 PACKAGE BOUNDARY NOTE: A1 surfaced that the originally-locked spec
-// path (apps/web/src/services/billing/...) was not importable from
-// apps/jobs (no @authently/web dep, no path alias, no exports field).
-// Resolution path (b) was locked: this stub lives in apps/jobs. A2's
-// pre-flight should explicitly cover Stripe SDK + env wiring scope in
-// apps/jobs.
-//
-// A2's commit is service-only: this file's body changes; the task body
-// (sweep-soft-deleted-workspaces.ts) and tests do not change. A2 also
-// adds dedicated tests in
-// apps/jobs/tests/services/billing/cancel-workspace-subscription.test.ts
-// covering the four paths above.
-// =============================================================================
+// Error contract: returns { ok: true } on goal-state-reached (cancel
+// succeeded, was already canceled, or subscription/customer doesn't
+// exist on Stripe). Returns { ok: false, error } on transient errors
+// (network, 5xx, 429) AND on auth errors (401/403). The Trigger.dev
+// caller treats { ok: false } as retry-eligible.
 
 export type CancelWorkspaceSubscriptionInput = {
   workspaceId: string;
@@ -72,9 +55,76 @@ export type CancelWorkspaceSubscriptionResult =
 export async function cancelWorkspaceSubscription(
   input: CancelWorkspaceSubscriptionInput,
 ): Promise<CancelWorkspaceSubscriptionResult> {
-  // STUB: A1 ships this returning { ok: true } unconditionally so the
-  // sweeper task body can be wired and tested end-to-end without a Stripe
-  // dependency. A2 replaces this body per the locked decisions above.
-  void input;
-  return { ok: true };
+  const { workspaceId, stripeSubscriptionId } = input;
+
+  // No-Stripe-relationship short-circuit. Free-tier workspaces and
+  // workspaces whose customer existed but never produced an active
+  // subscription both land here (pre-flight Q7 — sweeper's job is
+  // "cancel the recorded subscription," not "audit Stripe state").
+  if (!stripeSubscriptionId) {
+    return { ok: true };
+  }
+
+  const stripe = getJobsStripeClient();
+
+  try {
+    const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    if (sub.status === "canceled") {
+      console.warn(
+        "subscription already canceled in Stripe; finalizing locally",
+        { workspaceId, subscriptionId: stripeSubscriptionId },
+      );
+      return { ok: true };
+    }
+    await stripe.subscriptions.cancel(stripeSubscriptionId);
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof Stripe.errors.StripeInvalidRequestError) {
+      // 404 / resource_missing: the subscription our DB records as
+      // existing has no record on Stripe's side. Treat as goal-state-
+      // reached (nothing to cancel) but warn loudly — operators may
+      // grep for this specific phrasing during triage of data-
+      // inconsistency incidents.
+      if (err.code === "resource_missing") {
+        console.warn(
+          "subscription not found in Stripe; finalizing locally",
+          {
+            workspaceId,
+            subscriptionId: stripeSubscriptionId,
+            stripeCode: err.code,
+          },
+        );
+        return { ok: true };
+      }
+      // Other 4xx invalid_request errors are not goal-state — surface as
+      // failure so the sweeper records them in last_sweep_error.
+      return { ok: false, error: `invalid_request: ${err.message}` };
+    }
+    if (err instanceof Stripe.errors.StripeAuthenticationError) {
+      // Auth errors intentionally route through retry-then-sentinel
+      // rather than failing fast: a misconfigured STRIPE_SECRET_KEY in
+      // apps/jobs should land loudly in last_sweep_error after the
+      // sweeper's 3 retries deplete, even at the cost of burning 3
+      // attempts per workspace per hour across every sweep candidate.
+      // Quiet auth failure would let billing leakage continue
+      // unobserved; loud-and-recorded is the right trade.
+      return { ok: false, error: `auth: ${(err as Error).message}` };
+    }
+    if (err instanceof Stripe.errors.StripeRateLimitError) {
+      return { ok: false, error: `rate_limit: ${err.message}` };
+    }
+    if (err instanceof Stripe.errors.StripeConnectionError) {
+      return { ok: false, error: `connection: ${err.message}` };
+    }
+    if (err instanceof Stripe.errors.StripeAPIError) {
+      return { ok: false, error: `stripe_api: ${err.message}` };
+    }
+    if (err instanceof Stripe.errors.StripeError) {
+      return { ok: false, error: `stripe: ${err.message}` };
+    }
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
 }

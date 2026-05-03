@@ -28,6 +28,12 @@ import { vi } from "vitest";
 // extended for the cancel/retrieve methods A2 needs. Per the Sprint 05
 // A2 pre-flight: extraction to a shared package would warrant a third
 // consumer; copy + extend is the right call at two consumers.
+//
+// Differs from apps/web's helper in one important way: the mock factory
+// preserves the real `Stripe.errors` namespace (via vi.importActual) so
+// the cancel function's `instanceof Stripe.errors.StripeInvalidRequestError`
+// branches work in test. apps/web's tests don't exercise error paths, so
+// they didn't need this; A2's classification surface does.
 
 export type StripeMockState = {
   subscriptions: {
@@ -73,17 +79,27 @@ export function resetStripeMock(): void {
   state = null;
 }
 
-// vi.mock hoists, so the factory runs before any other module evaluation.
-// The factory returns a class whose instance proxies to the per-test
-// state. Tests do `vi.mock("stripe", () => stripeMockModule)` and import
-// this constant from the helper to keep the wiring identical across files.
-export const stripeMockModule = {
-  default: class FakeStripe {
-    subscriptions = {
-      cancel: (...args: unknown[]) =>
-        getStripeMock().subscriptions.cancel(...args),
-      retrieve: (...args: unknown[]) =>
-        getStripeMock().subscriptions.retrieve(...args),
-    };
-  },
-};
+// The vi.mock("stripe", factory) call lives in each test file rather
+// than here — vi.mock is hoisted to the top of the file before module
+// imports run, so its factory cannot reference an export from this
+// helper at module top level. The factory body is small (~10 lines);
+// duplicating it per test file is the right trade-off vs. the
+// `vi.hoisted` ceremony required to share a factory function across
+// files. The shared surface stays in this helper: state + recorders.
+//
+// Reference factory body for new test files:
+//
+//   vi.mock("stripe", async () => {
+//     const actual = await vi.importActual<typeof import("stripe")>("stripe");
+//     const { getStripeMock } = await import("../../helpers/stripe-mock");
+//     class FakeStripe {
+//       static errors = actual.default.errors;
+//       subscriptions = {
+//         cancel: (...args: unknown[]) =>
+//           getStripeMock().subscriptions.cancel(...args),
+//         retrieve: (...args: unknown[]) =>
+//           getStripeMock().subscriptions.retrieve(...args),
+//       };
+//     }
+//     return { default: FakeStripe };
+//   });

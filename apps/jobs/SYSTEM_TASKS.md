@@ -35,11 +35,12 @@ A new system task ships with: a header comment block on the task file naming all
 
 - **File:** `apps/jobs/src/trigger/sweep-soft-deleted-workspaces.ts`
 - **Schedule:** hourly (`cron: "0 * * * *"`)
-- **Purpose:** find workspaces soft-deleted >24h ago, cancel their Stripe subscription (Sprint 05 A2; A1 ships a stub at `apps/web/src/services/billing/cancel-workspace-subscription.ts`), then finalize the hard-delete by deleting child rows + setting `hard_deleted_at`. Audit-preserving: the workspaces row itself remains, marked hard-deleted.
-- **RPCs used:**
+- **Purpose:** find workspaces soft-deleted >24h ago, cancel their Stripe subscription via `apps/jobs/src/services/billing/cancel-workspace-subscription.ts` (Sprint 05 A2 wires the real Stripe call; A1 shipped this as a stub returning `ok` unconditionally), then finalize the hard-delete by deleting child rows + setting `hard_deleted_at`. Audit-preserving: the workspaces row itself remains, marked hard-deleted.
+- **RPCs / external services used:**
   - `public.svc_sweep_soft_deleted_workspaces(_cutoff_interval)` → returns candidate rows with Stripe IDs
   - `public.svc_finalize_workspace_hard_delete(_workspace_id)` → idempotent finalize (asserts state in WHERE)
   - `public.svc_record_workspace_sweep_error(_workspace_id, _error_text)` → per-workspace error log
+  - Stripe SDK (`stripe` v17) → `subscriptions.retrieve` + `subscriptions.cancel` (idempotent pre-read pattern, see service file header)
 - **Why bypass `defineTenantTask`:** see file header. Hourly cron with empty payload — no caller-supplied workspace identity; all three RPCs are SECURITY DEFINER + service_role-only; the find RPC is the sole source of workspace IDs; finalize is race-safe via `WHERE deleted_at IS NOT NULL AND hard_deleted_at IS NULL`.
 - **Perimeter tests:** `packages/db/tests/billing/sweep-soft-deleted-workspaces.test.ts` covers all three RPCs (anon + authenticated rejected with 42501 / PGRST202).
 

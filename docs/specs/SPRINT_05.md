@@ -236,6 +236,26 @@ columns are reused for cancellation error logging.
   must be added to `apps/jobs` (currently web-only). A second
   consumer in `apps/web` would warrant extraction to
   `packages/billing/`.
+- **Build-time amendment (Sprint 05 A2 C2 commit):** test file lives
+  in `apps/jobs/tests/services/billing/cancel-workspace-subscription.test.ts`,
+  not the spec's originally-named `apps/web/tests/...` path. Tests
+  follow the service into `apps/jobs` per the A1 amendment above;
+  spinning up `apps/jobs/` vitest infra was C1 of the A2 pair. Same
+  rationale as the A1 path-deviation amendment — cross-app boundary
+  forces co-location.
+- **Build-time amendment (Sprint 05 A2 C2 commit):** pre-flight Q4
+  lock revised from catch-and-detect to pre-read. Stripe's
+  already-canceled error predicate was not definitively documented
+  at Context7 verification time; pre-read asserts against documented
+  response shape (`status === "canceled"`) instead. 2x API calls per
+  common-path workspace accepted as cost of correctness in
+  unattended sweeper context. Implementation: `subscriptions.retrieve`
+  → check status → short-circuit with `console.warn` if already
+  canceled, else `subscriptions.cancel`. The 4xx `resource_missing`
+  case (subscription truly absent on Stripe) is still caught, with a
+  differentiated warn message so operators can grep for data-
+  inconsistency triage candidates separately from clean-state
+  already-canceled ones.
 - Function: `cancelWorkspaceSubscription({ workspaceId, stripeCustomerId, stripeSubscriptionId })`.
 - Uses the existing service-role Stripe client (per Sprint 02-D
   precedent in `apps/web/src/services/webhooks/stripe/`); A2 will

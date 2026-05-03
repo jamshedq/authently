@@ -26,6 +26,12 @@
 # === Sprint 05 origin ===
 
 # 1. apps/jobs test infrastructure setup
+#    STATUS: cleared in S05 A2 — vitest spun up alongside Stripe cancel
+#       implementation. C1 added vitest.config.ts + root test:jobs gate
+#       (lifted gate count 5 → 6); C2 populated the suite with 8 tests
+#       covering the cancel-workspace-subscription service. Revisit
+#       trigger fired exactly as designed (A2's outbound Stripe API
+#       integration was the named candidate).
 #    What: spin up vitest in apps/jobs (vitest.config.ts, package.json
 #       test script, root-level test:jobs gate, first test file
 #       scaffolding). Today apps/jobs has no test infrastructure;
