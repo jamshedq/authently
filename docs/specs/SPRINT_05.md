@@ -227,9 +227,18 @@ columns are reused for cancellation error logging.
 **App layer:**
 
 - File: `apps/web/src/services/billing/cancel-workspace-subscription.ts`.
+- **Build-time amendment (Sprint 05 A1 commit):** stub relocated to
+  `apps/jobs/src/services/billing/cancel-workspace-subscription.ts`.
+  Cross-app import from `apps/web` was not feasible (no
+  `@authently/web` dependency in `apps/jobs`; no path alias; no
+  exports field). A2's Stripe SDK + `STRIPE_SECRET_KEY` env wiring
+  must be added to `apps/jobs` (currently web-only). A second
+  consumer in `apps/web` would warrant extraction to
+  `packages/billing/`.
 - Function: `cancelWorkspaceSubscription({ workspaceId, stripeCustomerId, stripeSubscriptionId })`.
 - Uses the existing service-role Stripe client (per Sprint 02-D
-  precedent in `apps/web/src/services/webhooks/stripe/`).
+  precedent in `apps/web/src/services/webhooks/stripe/`); A2 will
+  initialize an equivalent client in `apps/jobs/src/lib/`.
 - Returns `{ ok: true }` on success or
   `{ ok: false, error: string }` on Stripe failure (so the Trigger.dev
   side can route to the error-recording RPC).

@@ -31,6 +31,29 @@ A new system task ships with: a header comment block on the task file naming all
 - **Why bypass `defineTenantTask`:** see file header. No caller-supplied input; both RPCs are SECURITY DEFINER + service_role-only; the find_ RPC is the sole source of workspace IDs; the downgrade_ RPC is race-safe (asserts `subscription_status='past_due'` in WHERE).
 - **Perimeter tests:** `packages/db/tests/billing/process-stripe-event-rls.test.ts` covers the corresponding RLS perimeter for the webhook RPC; the grace-period RPCs share the same `service_role`-only grant model.
 
+### `sweep-soft-deleted-workspaces` (Sprint 05 A1)
+
+- **File:** `apps/jobs/src/trigger/sweep-soft-deleted-workspaces.ts`
+- **Schedule:** hourly (`cron: "0 * * * *"`)
+- **Purpose:** find workspaces soft-deleted >24h ago, cancel their Stripe subscription (Sprint 05 A2; A1 ships a stub at `apps/web/src/services/billing/cancel-workspace-subscription.ts`), then finalize the hard-delete by deleting child rows + setting `hard_deleted_at`. Audit-preserving: the workspaces row itself remains, marked hard-deleted.
+- **RPCs used:**
+  - `public.svc_sweep_soft_deleted_workspaces(_cutoff_interval)` → returns candidate rows with Stripe IDs
+  - `public.svc_finalize_workspace_hard_delete(_workspace_id)` → idempotent finalize (asserts state in WHERE)
+  - `public.svc_record_workspace_sweep_error(_workspace_id, _error_text)` → per-workspace error log
+- **Why bypass `defineTenantTask`:** see file header. Hourly cron with empty payload — no caller-supplied workspace identity; all three RPCs are SECURITY DEFINER + service_role-only; the find RPC is the sole source of workspace IDs; finalize is race-safe via `WHERE deleted_at IS NOT NULL AND hard_deleted_at IS NULL`.
+- **Perimeter tests:** `packages/db/tests/billing/sweep-soft-deleted-workspaces.test.ts` covers all three RPCs (anon + authenticated rejected with 42501 / PGRST202).
+
+### `sweep-workspace-retry` (Sprint 05 A1)
+
+- **File:** `apps/jobs/src/trigger/sweep-workspace-retry.ts`
+- **Schedule:** event-triggered (called from `sweep-soft-deleted-workspaces` catch block)
+- **Purpose:** per-workspace retry companion to the main sweeper. Re-attempts cancel + finalize for a single failed workspace; on attempt-3 abandonment, writes a sentinel-prefixed `last_sweep_error` (`abandoned_after_3_retries: ...`) so operators can grep for triage candidates.
+- **RPCs used:**
+  - `public.svc_finalize_workspace_hard_delete(_workspace_id)` (same as main sweeper)
+  - `public.svc_record_workspace_sweep_error(_workspace_id, _error_text)` (same as main sweeper)
+- **Why bypass `defineTenantTask`:** payload contains `workspace_id` but it is sourced from the main sweeper's find RPC, never from end-user input. Trigger-side idempotency keyed on `workspace_id` (`{ idempotencyKey: workspaceId }` at trigger time) collapses concurrent retry chains. Built-in retry config (3 attempts, factor 2, 1m → 2m → 4m).
+- **Perimeter tests:** shares the perimeter test file with the main sweeper (RPCs are the same; perimeter is identical).
+
 ## Audit cadence
 
 When a system task is added, the reviewer must confirm all four guarantees in the PR. When CLAUDE.md rule 6 evolves, this file should be updated in the same PR so the registry stays in sync with the policy.
