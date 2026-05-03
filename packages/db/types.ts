@@ -74,6 +74,10 @@ export type Database = {
         Args: { _base_name: string; _email: string; _user_id: string }
         Returns: string
       }
+      finalize_workspace_hard_delete_impl: {
+        Args: { _workspace_id: string }
+        Returns: undefined
+      }
       find_workspaces_past_due_grace_expired_impl: {
         Args: never
         Returns: {
@@ -103,11 +107,24 @@ export type Database = {
         }
         Returns: string
       }
+      record_workspace_sweep_error_impl: {
+        Args: { _error_text: string; _workspace_id: string }
+        Returns: undefined
+      }
       set_workspace_stripe_customer_impl: {
         Args: { _stripe_customer_id: string; _workspace_id: string }
         Returns: undefined
       }
       slugify: { Args: { _input: string }; Returns: string }
+      sweep_soft_deleted_workspaces_impl: {
+        Args: { _cutoff_interval: string }
+        Returns: {
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          subscription_status: string
+          workspace_id: string
+        }[]
+      }
       touch_workspace_member_activity_impl: {
         Args: { _workspace_id: string }
         Returns: undefined
@@ -341,7 +358,10 @@ export type Database = {
         Row: {
           created_at: string
           deleted_at: string | null
+          hard_deleted_at: string | null
           id: string
+          last_sweep_attempt_at: string | null
+          last_sweep_error: string | null
           name: string
           past_due_since: string | null
           plan_tier: string
@@ -356,7 +376,10 @@ export type Database = {
         Insert: {
           created_at?: string
           deleted_at?: string | null
+          hard_deleted_at?: string | null
           id?: string
+          last_sweep_attempt_at?: string | null
+          last_sweep_error?: string | null
           name: string
           past_due_since?: string | null
           plan_tier?: string
@@ -371,7 +394,10 @@ export type Database = {
         Update: {
           created_at?: string
           deleted_at?: string | null
+          hard_deleted_at?: string | null
           id?: string
+          last_sweep_attempt_at?: string | null
+          last_sweep_error?: string | null
           name?: string
           past_due_since?: string | null
           plan_tier?: string
@@ -465,6 +491,10 @@ export type Database = {
         Args: { _workspace_id: string }
         Returns: undefined
       }
+      svc_finalize_workspace_hard_delete: {
+        Args: { _workspace_id: string }
+        Returns: undefined
+      }
       svc_find_workspaces_past_due_grace_expired: {
         Args: never
         Returns: {
@@ -484,9 +514,22 @@ export type Database = {
         }
         Returns: string
       }
+      svc_record_workspace_sweep_error: {
+        Args: { _error_text: string; _workspace_id: string }
+        Returns: undefined
+      }
       svc_set_workspace_stripe_customer: {
         Args: { _stripe_customer_id: string; _workspace_id: string }
         Returns: undefined
+      }
+      svc_sweep_soft_deleted_workspaces: {
+        Args: { _cutoff_interval?: string }
+        Returns: {
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          subscription_status: string
+          workspace_id: string
+        }[]
       }
       svc_upsert_stripe_price_tier_map: {
         Args: { _entries: Json }

@@ -1,0 +1,61 @@
+# Sprint 05 carryover index — deferrals captured during Sprint 05 execution
+# Inputs for Sprint 06+ planning. Mirrors SPRINT_04_carryovers.md's
+# convention (per-sprint carryover doc, comment-block format,
+# grep-friendly, planning-input tone — not user-facing docs).
+#
+# === Provenance ===
+# Sprint 05 commits referenced by entries in this file
+# (chore-sprint-05-section-a branch and successors):
+#   - <SHA>   feat(jobs): hard-delete sweeper (Sprint 05 A1)
+#   - (further SHAs added as Section A and Section B sub-items land)
+#
+# === Status markers ===
+# Items cleared in subsequent sprints retain their entry here for
+# historical reference, prefixed with a STATUS line naming the sprint
+# + sub-item that cleared them. Items reachable but not yet shipped
+# may carry a STATUS line of "ready for SNN+ implementation."
+#
+# === Entry schema ===
+# Each entry uses: (a) what's deferred, (b) why deferred + origin commit,
+# (c) approximate scope, (d) dependencies, (e) urgency-tell. Where (e)
+# is "no urgency-tell; lands when scheduled," that's stated explicitly
+# rather than omitted — keeps the schema uniform across entries and
+# prevents future readers from wondering whether the absence means
+# "no tell" or "didn't think about it."
+
+# === Sprint 05 origin ===
+
+# 1. apps/jobs test infrastructure setup
+#    What: spin up vitest in apps/jobs (vitest.config.ts, package.json
+#       test script, root-level test:jobs gate, first test file
+#       scaffolding). Today apps/jobs has no test infrastructure;
+#       trigger task bodies are not unit-tested at the package level.
+#    Why deferred: locked at A1 commit-time review. The 19 db tests in
+#       packages/db/tests/billing/sweep-soft-deleted-workspaces.test.ts
+#       cover the RPC contract surface (perimeter + sweep state machine
+#       + finalize cascade + record-error path) comprehensively. Spinning
+#       up a separate vitest config + package script + first test
+#       scaffolding for ~3 glue tests on the task body itself is the
+#       wrong investment ratio at this moment. Task body is essentially
+#       orchestration: rpc → service → rpc.
+#    Origin: A1 commit <SHA> — see commit body "Web tests for the task
+#       wrapper deferred" paragraph.
+#    Scope: small-medium. apps/jobs/vitest.config.ts (~30 lines mirroring
+#       packages/db); apps/jobs/package.json adds vitest devDep + test
+#       script; root package.json adds test:jobs gate (lifts gate count
+#       from 5 to 6); apps/jobs/tests/trigger/sweep-soft-deleted-workspaces.test.ts
+#       and adjacent tests (~150-300 lines covering the wrapper logic,
+#       not the RPCs).
+#    Dependencies: independent. No upstream blocker.
+#    Revisit trigger: when first apps/jobs sub-item needs unit-level
+#       coverage that isn't db-testable. A2's Stripe SDK integration is
+#       a candidate — assess at A2 pre-flight (the cancellation function
+#       gains real Stripe API call paths that warrant mock-based unit
+#       tests). B-section (Modal worker) likely needs its own Python
+#       test surface separately, so the apps/jobs/tests/ decision is
+#       primarily about TypeScript task wrapper coverage.
+#    Urgency-tell: a Trigger.dev task wrapper bug surfaces in production
+#       that the db-test suite didn't catch (e.g., supabase-js client
+#       error handling, retry logic, summary-shape regression). At that
+#       point, building unit tests against the task body becomes
+#       meaningfully cheaper than diagnosing in prod.
