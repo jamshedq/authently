@@ -80,6 +80,13 @@ export default defineConfig({
           include: ["tests/billing/**/*.test.ts"],
         },
       },
+      {
+        test: {
+          ...sharedTestConfig,
+          name: "sources",
+          include: ["tests/sources/**/*.test.ts"],
+        },
+      },
     ],
   },
 });

@@ -278,6 +278,15 @@ wrappers per source type; the worker pattern stays parallel.
 
 **App layer:**
 
+- **Build-time amendment (Sprint 06 B5 C2 commit):** route paths
+  use the established `apps/web/src/app/app/[workspaceSlug]/...`
+  convention, NOT the spec's originally-named
+  `apps/web/src/app/(app)/[workspace]/...` form. Three sibling
+  pages (dashboard, settings, members) ship `app/[workspaceSlug]/`
+  through Sprints 02-04; B5's upload page matches that convention
+  rather than introducing a parallel. Same shape as A1's
+  apps/web → apps/jobs path-deviation amendment from Sprint 05.
+
 - `packages/db/migrations/<ts>_sources_table.sql` (new) — schema +
   RLS + RPCs above.
 - `packages/db/types.ts` (regenerate) — `Source` row type + RPC

@@ -40,6 +40,13 @@ export default defineConfig({
       "@": resolve(here, "src"),
     },
   },
+  // Modern JSX transform — no React import required in .tsx files. Next
+  // uses jsx: "preserve" in tsconfig because next/swc handles the
+  // transform during build; vitest goes through esbuild and needs this
+  // to auto-import the JSX runtime. Sprint 06 B5 C1 spin-up.
+  esbuild: {
+    jsx: "automatic",
+  },
   test: {
     setupFiles: ["./tests/setup.ts"],
     // happy-dom for component tests (Sprint 06 B5 C1 spin-up). Service /

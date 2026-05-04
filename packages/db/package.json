@@ -19,6 +19,7 @@
     "test:rls": "vitest run --project rls",
     "test:auth": "vitest run --project auth",
     "test:billing": "vitest run --project billing",
+    "test:sources": "vitest run --project sources",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
