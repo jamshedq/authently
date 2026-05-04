@@ -27,7 +27,12 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@authently/shared", "@authently/db"],
   reactStrictMode: true,
   experimental: {
-    // Server Actions are on by default in Next 15; nothing to opt into here.
+    serverActions: {
+      // Sprint 06 B5: audio uploads via the transcribe-and-save server
+      // action send up to 25MB FormData per OpenAI Whisper API's file
+      // cap. Default Next 15 limit is 1MB; raise to match.
+      bodySizeLimit: "25mb",
+    },
   },
 };
 

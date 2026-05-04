@@ -19,6 +19,7 @@
     "test:rls": "pnpm --filter @authently/db test:rls",
     "test:auth": "pnpm --filter @authently/db test:auth",
     "test:billing": "pnpm --filter @authently/db test:billing",
+    "test:sources": "pnpm --filter @authently/db test:sources",
     "test:web": "pnpm --filter @authently/web test:web",
     "test:jobs": "pnpm --filter @authently/jobs test:jobs",
     "test:license-headers": "node scripts/check-license-headers.mjs",

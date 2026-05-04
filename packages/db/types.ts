@@ -57,6 +57,10 @@ export type Database = {
         Args: { _transfer_id: string }
         Returns: undefined
       }
+      create_source_audio_impl: {
+        Args: { _content: string; _user_id: string; _workspace_id: string }
+        Returns: string
+      }
       create_workspace_for_user: {
         Args: { _name: string; _user_id: string }
         Returns: string
@@ -165,6 +169,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "smoke_test_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sources: {
+        Row: {
+          content: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          type: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          type: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          type?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sources_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -430,6 +472,10 @@ export type Database = {
       api_cancel_ownership_transfer: {
         Args: { _transfer_id: string }
         Returns: undefined
+      }
+      api_create_source_audio: {
+        Args: { _content: string; _workspace_id: string }
+        Returns: string
       }
       api_create_workspace: {
         Args: { _name: string }
