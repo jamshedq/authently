@@ -52,6 +52,12 @@ const ServerEnvSchema = z.object({
   // docs/runbooks/stripe-products.md for the dev setup flow.
   STRIPE_PRICE_SOLO: z.string().min(1).optional(),
   STRIPE_PRICE_STUDIO: z.string().min(1).optional(),
+  // OpenAI — required by the transcription service (Sprint 06 B1).
+  // Optional in the schema for the same reason as STRIPE_SECRET_KEY:
+  // code paths that don't touch transcription shouldn't fail to boot
+  // because OpenAI isn't configured locally. The transcription service
+  // throws a clear error when invoked without it set.
+  OPENAI_API_KEY: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof ServerEnvSchema>;
