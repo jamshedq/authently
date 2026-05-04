@@ -18,9 +18,22 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// apps/web vitest setup. Validates the env vars route-handler tests need,
-// covering both the Supabase fixture path (shared with packages/db) and the
-// Stripe-product env vars the checkout/portal handlers read directly.
+// apps/web vitest setup. Two responsibilities:
+//
+//   1. Validates the env vars route-handler tests need — covers both the
+//      Supabase fixture path (shared with packages/db) and the Stripe-
+//      product env vars the checkout/portal handlers read directly.
+//
+//   2. Extends Vitest's `expect` with @testing-library/jest-dom matchers
+//      (toBeInTheDocument, toHaveTextContent, toBeDisabled, etc.) for
+//      component tests. Spun up in Sprint 06 B5 C1 alongside happy-dom +
+//      @testing-library/react. Service / route / lib tests don't use
+//      these matchers but the extend is a no-op for them.
+
+import { expect } from "vitest";
+import * as matchers from "@testing-library/jest-dom/matchers";
+
+expect.extend(matchers);
 
 const REQUIRED = [
   // Shared with packages/db tests
