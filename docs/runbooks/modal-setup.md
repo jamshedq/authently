@@ -1,5 +1,29 @@
 # Modal Setup — One-time Provisioning for Section B
 
+> **Status: Deferred (Sprint 05 closure, 2026-05-04)**
+>
+> This runbook was authored to support Sprint 05 Section B's
+> original Modal-based design. Section B is being redesigned
+> in Sprint 06 to use OpenAI Whisper API instead of self-hosted
+> Modal Whisper. This runbook is preserved as historical
+> reference for any future Section B revival that uses Modal,
+> but is **NOT** a required execution step for the current
+> codebase.
+>
+> See `docs/specs/SPRINT_06.md` (separate commit, landing
+> immediately after this closure) for the active
+> source-ingestion design. The deferral cascade is recorded
+> in `docs/specs/SPRINT_05_carryovers.md` entry #2 and in the
+> Sprint Closure Amendment at the top of `SPRINT_05.md`.
+>
+> Drift finding from attempted Sprint 05 execution: `modal`
+> command did not resolve in non-interactive shell after
+> `pip install`. If this runbook is ever revived, add a
+> Step 2.5 verifying CLI resolves in non-interactive shell
+> context (CI, automation). Recorded here only — runbook body
+> below is intentionally unmodified per deferred-and-superseded
+> status.
+
 Last updated: Sprint 05 spec-lock cycle (drafted by Claude, reviewed
 and committed by human; runbook execution is human-driven). Future
 updates by humans during account or billing changes, when Section B's
