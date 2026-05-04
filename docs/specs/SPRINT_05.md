@@ -23,6 +23,43 @@
 
 # Sprint 05 — Carryover sweep + Source ingestion
 
+## Sprint Closure Amendment (2026-05-04)
+
+Sprint 05 ships partially complete. **Section A** (A1 hard-delete
+sweeper + A2 Stripe cancellation) merged to main across three
+commits (`307be66`, `ddf46a0`, `cf9b64f`). **Section B** (B1 Modal
+Whisper + B2 yt-dlp + B3 Trafilatura/pdfplumber + B4 source
+orchestration + B5 file upload UI) deferred during Sprint 05
+execution.
+
+**Deferral cascade:** pre-execution review of the Modal-setup
+runbook surfaced (a) cost concerns ($250/month Team plan
+unjustified at current stage), which surfaced (b) the broader
+provider-choice question (Modal self-hosted Whisper vs OpenAI
+Whisper API), which surfaced (c) underlying use-case fuzziness
+about transcription's role in Authently. Resolved same-day via
+narrowed use case (research workspace + verification, primarily
+use cases 1 and 4 from product reflection) and provider switch to
+OpenAI Whisper API.
+
+**Section B revived in Sprint 06** with a redesigned approach:
+OpenAI Whisper API (not Modal), synchronous execution in
+`apps/web` (not `apps/jobs`), short-audio-only initial scope with
+long-audio support deferred to future work. See `SPRINT_06.md`
+for the redesigned spec (separate commit immediately following
+this closure).
+
+The Section B detail in this document (below) is preserved as
+historical reference for the original Modal-based design. **Do
+NOT execute as-is — Sprint 06 supersedes.** The Modal-setup
+runbook (`docs/runbooks/modal-setup.md`) carries a parallel
+amendment marking it deferred-and-superseded.
+
+Carryover entry in `SPRINT_05_carryovers.md` records the deferral
+with full provenance.
+
+---
+
 ## Goal
 
 Ship two sections in sequence. **Section A — Carryover sweep** clears the

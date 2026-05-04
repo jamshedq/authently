@@ -65,3 +65,43 @@
 #       error handling, retry logic, summary-shape regression). At that
 #       point, building unit tests against the task body becomes
 #       meaningfully cheaper than diagnosing in prod.
+
+# 2. Section B (source ingestion) — Modal-based design
+#    STATUS: superseded by Sprint 06 OpenAI-based redesign.
+#    What: B1-B5 source ingestion suite as originally specced in
+#       Sprint 05 against Modal infrastructure — Whisper transcription
+#       on A10G GPU via @modal.batched + transformers, yt-dlp /
+#       Trafilatura / pdfplumber Python workers, source orchestration
+#       in apps/jobs, file upload UI in apps/web. Pass 2 Q12-Q17 locks
+#       (Modal-greenfield decisions) and the full B1-B5 sub-item
+#       breakdown in SPRINT_05.md preserved as historical reference.
+#    Why deferred: pre-execution Modal-setup runbook review surfaced
+#       cost concerns ($250/month Team plan unjustified at current
+#       stage), which surfaced provider-choice questions (Modal
+#       self-hosted Whisper vs OpenAI Whisper API), which surfaced
+#       underlying use-case fuzziness about transcription's role in
+#       Authently. Resolved same-day via narrowed use case (research
+#       workspace + verification, mostly use cases 1 and 4) and
+#       provider switch to OpenAI Whisper API.
+#    Origin: Sprint 05 mid-execution pivot, 2026-05-04. Runbook
+#       (docs/runbooks/modal-setup.md, commit f2025bb) was authored
+#       in Sprint 05 spec-lock; amendment marking it deferred-and-
+#       superseded lands in the same closure commit as this entry.
+#    Scope: All of B1-B5 in original Modal-based form. Sprint 06
+#       redesign reshapes scope significantly — synchronous in
+#       apps/web, OpenAI Whisper API, short-audio-only initial.
+#    Dependencies: Sprint 06 redesign supersedes. No further work
+#       against the Modal-based design unless Sprint 06's approach
+#       fails its own validation criteria and forces a revival.
+#    Revisit trigger: already fired — Sprint 06 spec-lock revives
+#       Section B with the redesigned OpenAI-based approach. This
+#       entry is historical reference only; future revivals to
+#       Modal-based design (e.g., OpenAI Whisper proves unsuitable;
+#       cost graduation makes self-hosted Modal economically viable
+#       at scale) would consult both this entry and the preserved
+#       SPRINT_05.md Section B detail.
+#    Urgency-tell: N/A (resolved).
+#    Drift findings (attempted Sprint 05 execution): modal CLI
+#       PATH resolution issue in non-interactive shells. See runbook
+#       status callout. Not fixed; recorded for future revival
+#       reference.
