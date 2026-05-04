@@ -42,6 +42,10 @@ export default defineConfig({
   },
   test: {
     setupFiles: ["./tests/setup.ts"],
+    // happy-dom for component tests (Sprint 06 B5 C1 spin-up). Service /
+    // route / lib tests run fine here too — happy-dom is a no-op for code
+    // that doesn't touch DOM globals.
+    environment: "happy-dom",
     testTimeout: 20_000,
     hookTimeout: 20_000,
     // Tests create real users in Supabase Auth and clean up after themselves;
