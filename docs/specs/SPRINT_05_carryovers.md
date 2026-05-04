@@ -105,3 +105,33 @@
 #       PATH resolution issue in non-interactive shells. See runbook
 #       status callout. Not fixed; recorded for future revival
 #       reference.
+
+# 3. Long-audio transcription support
+#    STATUS: deferred from Sprint 06 (vertical slice scope).
+#    What: Audio sources longer than OpenAI Whisper API's 25MB /
+#       ~25-minute file-endpoint limit. Sprint 06 enforces a hard
+#       cap at upload time per B1-Q4; longer audio is rejected
+#       with a clear error message ("Audio must be under 25
+#       minutes — longer transcription coming soon" or similar).
+#    Why deferred: D2 lock at Sprint 06 design time. Chunking
+#       audio + stitching transcripts adds meaningful complexity
+#       (chunk boundary handling, sentence-cut artifacts, async
+#       pipeline requirement, partial-failure semantics) without
+#       validated user demand. Bootstrap-friendly bias: ship
+#       short-audio first, validate use, expand on demand.
+#    Origin: Sprint 06 spec-lock, 2026-05-04.
+#    Scope: Audio sources >25MB or >~25 minutes. Includes full
+#       podcast episodes, lectures, panel discussions, and other
+#       long-form content typical of research workflows.
+#    Dependencies: B1's sync apps/web architecture supports short
+#       audio cleanly (transcription completes within request
+#       timeout). Long-audio support requires (a) chunking
+#       pipeline, (b) async execution model — apps/jobs likely,
+#       given Vercel function timeout constraints, and (c)
+#       chunk-stitching logic at the transcript layer.
+#    Revisit trigger: first user request for long-audio support,
+#       OR clear product decision that long-audio is launch-required
+#       for the research workspace use case.
+#    Urgency-tell: error messages on rejected uploads will reveal
+#       user intent. If a non-trivial fraction of upload attempts
+#       hit the 25-minute cap, that's signal to revisit.
