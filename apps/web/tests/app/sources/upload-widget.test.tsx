@@ -27,7 +27,6 @@ vi.mock(
   "@/app/app/[workspaceSlug]/sources/upload/actions",
   () => ({
     transcribeAndSave: vi.fn(),
-    maxDuration: 300,
   }),
 );
 

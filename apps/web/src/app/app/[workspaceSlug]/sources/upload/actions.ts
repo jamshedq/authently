@@ -22,17 +22,7 @@
 
 import { transcribeAudio } from "@/services/transcription/openai-whisper";
 import { createSourceAudio } from "@/services/sources/create-source-audio";
-
-// Vercel Pro plan supports up to 300s server-action timeouts. Whisper
-// transcription for files near the 25MB cap takes 1-3 minutes; this
-// budget covers the worst case + the small overhead of the
-// api_create_source_audio RPC call. Hobby plan max is 60s; Sprint 06
-// requires Pro per the locked B1 pre-flight.
-export const maxDuration = 300;
-
-export type TranscribeAndSaveResult =
-  | { ok: true; sourceId: string; transcript: string }
-  | { ok: false; error: string };
+import type { TranscribeAndSaveResult } from "./types";
 
 export async function transcribeAndSave(
   formData: FormData,

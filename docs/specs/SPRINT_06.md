@@ -287,6 +287,21 @@ wrappers per source type; the worker pattern stays parallel.
   rather than introducing a parallel. Same shape as A1's
   apps/web → apps/jobs path-deviation amendment from Sprint 05.
 
+- **Build-time amendment (Sprint 06 B5 post-merge fix):** the
+  locked design placed `export const maxDuration = 300` and the
+  `TranscribeAndSaveResult` type export on `actions.ts`. Next.js's
+  `"use server"` directive forbids non-async-function exports from
+  server-action files; both fail at route serve time with
+  *"Only async functions are allowed to be exported in a 'use
+  server' file."* Caught at smoke-test time (manual browser load),
+  not by typecheck/lint/tests — Next.js only validates this at
+  serve time. `maxDuration` moved to `page.tsx` (route segment,
+  where Next.js actually consumes it); `TranscribeAndSaveResult`
+  moved to a sibling `types.ts` file imported by `actions.ts`.
+  Spec design intent preserved; only file placement corrected.
+  Real signal that smoke testing catches what automated gates
+  can't.
+
 - `packages/db/migrations/<ts>_sources_table.sql` (new) — schema +
   RLS + RPCs above.
 - `packages/db/types.ts` (regenerate) — `Source` row type + RPC
