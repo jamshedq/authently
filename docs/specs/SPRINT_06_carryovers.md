@@ -23,8 +23,29 @@
 
 # === Sprint 06 origin ===
 
-# 1. Section B sub-items B2, B3, B4 (Sprint 07 scope)
-#    STATUS: deferred to Sprint 07 by Sprint 06 spec-lock; vertical-
+# 1. Section B sub-items B2, B3, B4 (originally Sprint 07 scope)
+#    STATUS: B3 cleared in Sprint 07 (spec-lock 2026-05-05) — URL/PDF
+#       extraction via Trafilatura + pdfplumber, Trigger.dev v4 Python
+#       build extension, sources management surface (list + polling +
+#       delete) shipped together as the Sprint 07 vertical slice.
+#       B2 (YouTube via yt-dlp) and B4 (orchestration) carried forward
+#       to Sprint 08 per Sprint 07 vertical-slice discipline. The
+#       per-sub-item picture:
+#         - B3: cleared in Sprint 07. Original "deferred to Sprint 07"
+#           status is now resolved. yt-dlp brittleness (entry #2 below)
+#           does NOT carry to B3 — only B2.
+#         - B2: deferred to Sprint 08. Recorded in
+#           SPRINT_07_carryovers.md entry #1.
+#         - B4: deferred to Sprint 08. Recorded in
+#           SPRINT_07_carryovers.md entry #1. Becomes load-bearing
+#           with three-plus source types in production; once Sprint 08
+#           lands B2's `youtube_transcript`, parallel
+#           `api_create_source_*` wrappers start to feel like
+#           duplication B4 collapses.
+#       Original "deferred to Sprint 07" framing below preserved as
+#       historical context for the original lock decision.
+#       --- ORIGINAL STATUS ---
+#       deferred to Sprint 07 by Sprint 06 spec-lock; vertical-
 #       slice strategy locked at D5a/D5b.
 #    What: B2 (YouTube ingestion via yt-dlp), B3 (URL/PDF extraction
 #       via Trafilatura + pdfplumber), B4 (source orchestration tying
