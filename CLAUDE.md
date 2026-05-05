@@ -78,6 +78,31 @@ When adding a new RPC, pick the right entry-point prefix. The wrapper-and-worker
 - Conventional commits. PRs reference the sprint spec they implement.
 - Public API endpoints (`/api/v1/*`) are versioned and stable. Breaking changes require a new version, not a silent update.
 
+## Framework rules not caught by automated gates
+
+Some Next.js (and other framework) rules are enforced only at route-serve time. Typecheck, lint, and tests pass against the source; the violation surfaces the first time the route is loaded. Catalog the ones we've hit, and run a manual smoke pass on changes that could trip them.
+
+### Next.js `"use server"` export constraint
+
+Any TypeScript file with the `"use server"` directive must export only async functions. Non-async exports — constants, types, classes, sync functions — fail Next.js's server-action validation at route-serve time with *"Only async functions are allowed to be exported in a 'use server' file."* Typecheck, lint, and tests do not enforce this.
+
+Common violations and where the export belongs instead:
+- `export const maxDuration = 300;` → move to the route segment (`page.tsx` / `layout.tsx`), where Next.js actually consumes it.
+- `export type Foo = ...;` → move to a sibling `types.ts` and import the type into `actions.ts`. Any consumer (the action itself, the client widget) imports from `types.ts`.
+- `export const SOME_CONST = ...;` → move to a co-located constants file, or inline it inside the action body if used only there.
+
+Reference: Sprint 06 B5 polish fix at commit `7c49082`. The locked B5 design placed `export const maxDuration = 300` and a `TranscribeAndSaveResult` type on `actions.ts`; both passed all 6 CI gates and only failed at first browser load.
+
+### Manual smoke test on server-action changes
+
+Any commit that touches Next.js server actions — modifying `actions.ts`, adding a new `"use server"` file, changing route segment configuration — should trigger a manual smoke pass before merge, even when all 6 gates are green.
+
+Reasoning: Next.js's directive-export rule (and similar runtime-enforced constraints) is enforced at route-serve time, not at typecheck/lint/test time. A passing CI run does not prove the route compiles in a browser. Manual smoke is the only gate that exercises the full Next.js build → route-serve → render path.
+
+The smoke test does not need to be exhaustive. A single browser load of the affected route — or a `curl` to it against a running dev server, sufficient to trigger lazy compilation — is enough to catch this class of issue.
+
+Reference: Sprint 06 B5 vertical slice — all 6 gates green, CI green twice (PR #19 original + rebased), manual browser load surfaced the `"use server"` placement violation. Smoke caught a real bug that automated gates structurally couldn't.
+
 ## Authenticity Engine rules
 
 When working in `packages/voice` or anywhere it's invoked:
