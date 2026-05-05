@@ -23,6 +23,15 @@ import { UploadWidget } from "./upload-widget";
 
 export const dynamic = "force-dynamic";
 
+// Vercel Pro plan supports up to 300s server-action timeouts. Whisper
+// transcription for files near the 25MB cap takes 1-3 minutes; this
+// budget covers the worst case + the small overhead of the
+// api_create_source_audio RPC call. Hobby plan max is 60s; Sprint 06
+// requires Pro per the locked B1 pre-flight. Lives on the route
+// segment (page.tsx), not the server-action file — Next.js's
+// "use server" directive forbids non-async-function exports.
+export const maxDuration = 300;
+
 type Props = {
   params: Promise<{ workspaceSlug: string }>;
 };
