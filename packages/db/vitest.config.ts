@@ -87,6 +87,13 @@ export default defineConfig({
           include: ["tests/sources/**/*.test.ts"],
         },
       },
+      {
+        test: {
+          ...sharedTestConfig,
+          name: "storage",
+          include: ["tests/storage/**/*.test.ts"],
+        },
+      },
     ],
   },
 });

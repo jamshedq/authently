@@ -90,6 +90,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.45.4
         version: 2.105.1
+      '@trigger.dev/sdk':
+        specifier: 4.4.4
+        version: 4.4.4(zod@3.25.76)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

@@ -25,3 +25,18 @@
 export type TranscribeAndSaveResult =
   | { ok: true; sourceId: string; transcript: string }
   | { ok: false; error: string };
+
+// Sprint 07 C2b.2 — URL upload action result. The widget consumes this
+// to render either the post-upload redirect/success state or a
+// prefix-encoded error message (validation:, rpc:, trigger_failed:,
+// trigger_failed_rollback_failed:).
+export type UploadUrlResult =
+  | { ok: true; sourceId: string }
+  | { ok: false; error: string };
+
+// Sprint 07 C2b.2 — PDF upload action result. Same shape as the URL
+// case; error prefixes additionally include upload_failed: and
+// upload_failed_rollback_failed:.
+export type UploadPdfResult =
+  | { ok: true; sourceId: string }
+  | { ok: false; error: string };
