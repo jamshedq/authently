@@ -168,3 +168,10 @@ Thumbs.db
 
 # Claude Code per-project state
 .claude/
+
+# --- Python (Sprint 07 C2.5: pytest gate for apps/jobs/python/) ---
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/

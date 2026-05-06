@@ -11,6 +11,7 @@
     "lint": "echo 'lint not yet wired (Sprint 01, Step 4)' && exit 0",
     "test": "echo 'run pnpm test:jobs for the test suite' && exit 0",
     "test:jobs": "vitest run tests",
+    "test:python": "cd python && PY=$(test -x .venv/bin/python && echo .venv/bin/python || echo python3) && $PY -m pytest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

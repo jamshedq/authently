@@ -53,6 +53,31 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Set up Python
+        # Sprint 07 C2.5 — pytest gate for apps/jobs/python/ extraction
+        # modules. Pinned to 3.12 as a CI-side approximation; production
+        # runtime version is determined by Trigger.dev's deployment
+        # container and is not pre-flight-pinned (see SPRINT_07_preflight.md
+        # Item 1 [NOTE 2026-05-06]). Both extraction libraries support
+        # Python >=3.8, so 3.12 exercises the modules under a current
+        # stable interpreter.
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        # No pip caching here: the broader workflow does not currently
+        # cache pip, and introducing it for one gate would establish a
+        # new convention. Revisit alongside any future pip-caching
+        # decision rather than as a side-effect of C2.5.
+        run: |
+          pip install --upgrade pip
+          pip install -r apps/jobs/python/requirements.txt
+          pip install -r apps/jobs/python/dev-requirements.txt
+
+      - name: Tests (Python)
+        run: pnpm test:python
+
   rls:
     name: RLS isolation tests
     runs-on: ubuntu-latest

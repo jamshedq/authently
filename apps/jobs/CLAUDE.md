@@ -607,4 +607,24 @@ dashboard's "Test run" button.
 System tasks (no `workspace_id`) and tenant tasks both use
 `schedules.task` for cron — the difference is whether the run body goes
 through `defineTenantTask` semantics or not.
+
+## Python gate (`test:python`)
+
+Sprint 07 C2.5 introduced `pnpm test:python` — a pytest gate covering
+`apps/jobs/python/`. The gate command (`apps/jobs/package.json`) detects
+a local `apps/jobs/python/.venv/` and prefers its Python over the system
+`python3`; CI does not need a venv since `actions/setup-python@v5`
+provides the runtime in PATH and the pip-install step puts pytest into
+that runtime. Effective minimum runtime is **Python 3.10** (driven by
+`pdfminer.six`'s transitive requirement; see
+`docs/specs/SPRINT_07_preflight.md` Item 1 `[NOTE 2026-05-06]` for the
+discovery + the production-runtime gap). Local devs whose system Python
+is older than 3.10 need a venv at the conventional `apps/jobs/python/.venv/`
+path — the gate's detection picks it up automatically.
+
+This venv-detection idiom is intentional, not accidental: the Python
+ecosystem's reality (system Python on macOS lags CI's pinned version,
+and dependency trees enforce per-library floors) makes a probe-or-fallback
+shape cleaner than forcing every dev to globally align Python versions
+with CI. Future Python gate commands should follow the same pattern.
 <!-- AUTHENTLY-SPECIFIC END -->
