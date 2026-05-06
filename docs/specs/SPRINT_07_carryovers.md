@@ -99,6 +99,69 @@
 #       stuck rows, OR the appearance of orphan rows in the
 #       sources-list UI for first users that would degrade the
 #       perceived reliability of the sources surface.
+#
+#    --- [E6d-Storage addendum, added 2026-05-06 with C2b.1] ---
+#    Storage object orphans — distinct from the DB-row orphans above.
+#
+#    What: PDF uploads (Sprint 07 pre-flight Item 3 — Supabase Storage
+#       signed URL at `ws/{workspace_id}/{source_id}.pdf` in the
+#       `sources-pdf` bucket) create Storage objects via the apps/web
+#       action layer (lands in C2b.2). Storage orphans surface when
+#       (a) extraction fails or the task crashes after upload;
+#       (b) the row is created but the user abandons the upload
+#       mid-flight; (c) other upload-without-row races. URL extraction
+#       has no Storage footprint, so Storage orphans are a
+#       pdf_extraction-only concern.
+#
+#       api_delete_source soft-delete (C2b.1) does NOT cascade to
+#       Storage cleanup — soft-deleted rows logically still exist and
+#       keep their Storage object alongside them. Storage orphans only
+#       surface from failed extractions or upload-without-row races,
+#       not from user-initiated deletes.
+#    Why deferred: same E6d reasoning as the DB-row sweeper above —
+#       without production traffic, the orphan rate is hypothetical.
+#       Bootstrap-friendly bias: ship without, observe in production
+#       (bucket size, cost/quota), build the sweeper if the rate is
+#       meaningful.
+#    Origin: Sprint 07 C2b.1 commit, 2026-05-06. The C2b.1 RPCs are
+#       the structural entry point where Storage object creation
+#       becomes possible (via C2b.2's apps/web action layer that uses
+#       api_create_source_pdf and then uploads PDF bytes to the
+#       deterministic path). Addendum lands inline with C2b.1 because
+#       that's the commit where the orphan class is introduced — the
+#       doc artifact lives next to the RPCs that create the possibility.
+#    Scope: small. One Trigger.dev scheduled task or apps/jobs cron
+#       that lists the `sources-pdf` Storage bucket and deletes objects
+#       whose corresponding source row is missing, soft-deleted, or in
+#       `'failed'` status past a threshold. Pattern parallels the DB-row
+#       sweeper above.
+#    Dependencies: Sprint 07 C2b.2 ships (apps/web action layer that
+#       creates Storage objects) + production data to make orphan rate
+#       measurable.
+#    Tooling gap (load-bearing for the trigger to actually fire):
+#       there is no existing mechanism that surfaces "this Storage
+#       object has no corresponding active source row." Supabase Studio
+#       shows aggregate bucket size; Stripe shows aggregate costs at
+#       the billing boundary; neither surfaces orphan-vs-active counts.
+#       Building orphan-detection tooling (a list-bucket-and-join-by-
+#       source_id query, or a cron that emits a metric) is itself a
+#       future-sprint concern not in scope for any current sprint.
+#       **Until that tooling exists, Storage orphans accrue silently
+#       and are accepted.** The sweeper described above is feasible
+#       only after the orphan-detection tooling lands.
+#    Revisit trigger: passive observation only, until tooling exists.
+#       Bucket size growing disproportionately to active row count
+#       (visible at Supabase Studio's storage view as a coarse signal),
+#       OR Storage cost trending up at the Stripe billing boundary,
+#       OR direct user feedback about bucket usage. None of these fire
+#       at low scale — early-stage orphans are not detectable. When the
+#       trigger is "fire if cost matters," the trigger may not fire
+#       until cost has materially mattered. Acknowledged.
+#    Urgency-tell: Supabase Storage usage analytics OR billing cost
+#       trend, with the caveat above. If the `sources-pdf` bucket grows
+#       disproportionately to active pdf_extraction row count once
+#       observability lands (when, not if — orphan-detection tooling
+#       is owed), Storage cleanup is the cheapest remediation.
 
 # 3. Card grid view for sources list page
 #    STATUS: deferred from Sprint 07 list page; E5 lock — compact

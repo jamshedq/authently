@@ -61,11 +61,20 @@ export type Database = {
         Args: { _content: string; _user_id: string; _workspace_id: string }
         Returns: string
       }
+      create_source_pdf_impl: {
+        Args: { _title: string; _user_id: string; _workspace_id: string }
+        Returns: string
+      }
+      create_source_url_impl: {
+        Args: { _source_url: string; _user_id: string; _workspace_id: string }
+        Returns: string
+      }
       create_workspace_for_user: {
         Args: { _name: string; _user_id: string }
         Returns: string
       }
       delete_account_impl: { Args: never; Returns: undefined }
+      delete_source_impl: { Args: { _source_id: string }; Returns: undefined }
       delete_workspace_impl: {
         Args: { _workspace_id: string }
         Returns: undefined
@@ -499,6 +508,14 @@ export type Database = {
         Args: { _content: string; _workspace_id: string }
         Returns: string
       }
+      api_create_source_pdf: {
+        Args: { _title: string; _workspace_id: string }
+        Returns: string
+      }
+      api_create_source_url: {
+        Args: { _source_url: string; _workspace_id: string }
+        Returns: string
+      }
       api_create_workspace: {
         Args: { _name: string }
         Returns: {
@@ -510,6 +527,7 @@ export type Database = {
         }[]
       }
       api_delete_account: { Args: never; Returns: undefined }
+      api_delete_source: { Args: { _source_id: string }; Returns: undefined }
       api_delete_workspace: {
         Args: { _workspace_id: string }
         Returns: undefined
