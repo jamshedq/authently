@@ -23,6 +23,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.45.4
         version: 2.105.1
+      '@trigger.dev/python':
+        specifier: 4.4.4
+        version: 4.4.4(@trigger.dev/build@4.4.4(magicast@0.3.5)(typescript@5.9.3))(@trigger.dev/sdk@4.4.4(zod@3.25.76))
       '@trigger.dev/sdk':
         specifier: 4.4.4
         version: 4.4.4(zod@3.25.76)
@@ -2121,6 +2124,13 @@ packages:
   '@trigger.dev/core@4.4.4':
     resolution: {integrity: sha512-m748W6tF/eIGzEaFjuvlicCqxop5GFxnt/eSb7kg0g9ZC2VW0iBa/rOx4aCQlkHd4MKn3B+t2LQLhn/eI9kHDw==}
     engines: {node: '>=18.20.0'}
+
+  '@trigger.dev/python@4.4.4':
+    resolution: {integrity: sha512-L4OGSA5jgEHHgtn+BgSbolDOvj5h4eQVlLvuBbuRDgqRA7O137cx9PQPx4CkdmZAdZzANjuj+r2xigejVNexFQ==}
+    engines: {node: '>=18.20.0'}
+    peerDependencies:
+      '@trigger.dev/build': ^4.4.4
+      '@trigger.dev/sdk': ^4.4.4
 
   '@trigger.dev/schema-to-json@4.4.4':
     resolution: {integrity: sha512-VPxyaOUlc5LG3CJ7ldnIKXxcR7D5g8iXExv10TNINWMs3j8NeXZD0wZsK3vvtssDL9qOEpipVw3ftDRozKQxAg==}
@@ -7165,6 +7175,17 @@ snapshots:
       zod: 3.25.76
       zod-error: 1.5.0
       zod-validation-error: 1.5.0(zod@3.25.76)
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
+  '@trigger.dev/python@4.4.4(@trigger.dev/build@4.4.4(magicast@0.3.5)(typescript@5.9.3))(@trigger.dev/sdk@4.4.4(zod@3.25.76))':
+    dependencies:
+      '@trigger.dev/build': 4.4.4(magicast@0.3.5)(supports-color@10.2.2)(typescript@5.9.3)
+      '@trigger.dev/core': 4.4.4(supports-color@10.2.2)
+      '@trigger.dev/sdk': 4.4.4(zod@3.25.76)
+      tinyexec: 0.3.2
     transitivePeerDependencies:
       - bufferutil
       - supports-color

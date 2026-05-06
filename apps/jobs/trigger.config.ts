@@ -18,13 +18,21 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { defineConfig } from "@trigger.dev/sdk/v3";
+import { defineConfig } from "@trigger.dev/sdk";
+import { pythonExtension } from "@trigger.dev/python/extension";
 
-// Trigger.dev v3 project configuration. The `project` reference must match a
+// Trigger.dev v4 project configuration. The `project` reference must match a
 // project in your Trigger.dev account (cloud or self-hosted) — set it via the
 // TRIGGER_PROJECT_REF env var (apps/jobs/.env), or replace the fallback
 // below after running `npx trigger.dev@latest login` and creating the
 // Authently project.
+//
+// Sprint 07 C2a inline correction: import path moved from
+// `@trigger.dev/sdk/v3` to `@trigger.dev/sdk`. v4 SDK 4.4.4's
+// package.json maps both `.` and `./v3` paths to the same source file
+// (`./src/v3/index.ts`), so the prior import was not broken — but the
+// modern v4 form drops the `/v3` suffix and matches the conventions
+// documented in apps/jobs/CLAUDE.md.
 export default defineConfig({
   project: process.env["TRIGGER_PROJECT_REF"] ?? "proj_authently_placeholder",
   runtime: "node",
@@ -44,4 +52,20 @@ export default defineConfig({
   },
   // Discovery roots for task definitions.
   dirs: ["./src/trigger"],
+  // Sprint 07 C2a: Python build extension for B3 (URL/PDF extraction).
+  // Bundles apps/jobs/python/*.py into the deployment image and pip-installs
+  // the pinned trafilatura + pdfplumber from requirements.txt into a venv at
+  // /opt/venv. devPythonBinaryPath points at the local venv used during
+  // `pnpm --filter @authently/jobs dev` so the same scripts run locally
+  // without rebuilds. Per SPRINT_07_preflight.md Item 1 (Context7-current
+  // import path: @trigger.dev/python/extension).
+  build: {
+    extensions: [
+      pythonExtension({
+        scripts: ["./python/**/*.py"],
+        requirementsFile: "./python/requirements.txt",
+        devPythonBinaryPath: ".venv/bin/python",
+      }),
+    ],
+  },
 });

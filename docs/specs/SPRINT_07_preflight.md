@@ -120,6 +120,23 @@ depend on this resolution — it lands first as planned. C2 (B3 backend)
 uses the resolved import path, configures `pythonExtension`, and
 updates apps/jobs/CLAUDE.md as part of the same commit.
 
+**[CORRECTED 2026-05-06 — exit-code semantics: always exit 0, encode success/failure in JSON shape only.]** The original
+"Locked design context" line above states *"Exit codes 0 (success) / 1
+(failure)"* — that contract is incorrect for the actual
+`@trigger.dev/python@4.4.4` SDK behavior. `python.runScript` calls
+`execa` with `throwOnError: false` then explicitly re-throws if
+`exitCode !== 0`: `if (result.exitCode !== 0) throw new Error(...)`.
+Non-zero exits become exceptions on the consumer side, swallowing
+the parseable failure-shape JSON inside the error message. Surfaced
+during C2a Checkpoint 3 implementation (commit landing this
+correction). The corrected contract: **Python scripts always exit 0;
+success/failure is encoded purely in the JSON shape on stdout.** Real
+runtime catastrophes (Python binary missing, import failure, OOM)
+still cause non-zero exit and trigger the SDK throw, which the task
+wrapper catches and routes to `transient: python_runtime:<ErrorName>`.
+The JSON contract from B3-Q2 is unchanged; only the exit-code
+dimension simplifies.
+
 ## Item 2 — Trafilatura + pdfplumber pinned versions
 
 **Locked design context.** SPRINT_07.md E3: dependencies pinned in
