@@ -133,6 +133,16 @@ export type Database = {
         Args: { _workspace_id: string }
         Returns: undefined
       }
+      update_source_status_impl: {
+        Args: {
+          _content?: string
+          _error?: string
+          _source_id: string
+          _status: string
+          _title?: string
+        }
+        Returns: undefined
+      }
       upsert_stripe_price_tier_map_impl: {
         Args: { _entries: Json }
         Returns: number
@@ -181,7 +191,11 @@ export type Database = {
           content: string
           created_at: string
           deleted_at: string | null
+          error: string | null
           id: string
+          source_url: string | null
+          status: string
+          title: string | null
           type: string
           user_id: string
           workspace_id: string
@@ -190,7 +204,11 @@ export type Database = {
           content: string
           created_at?: string
           deleted_at?: string | null
+          error?: string | null
           id?: string
+          source_url?: string | null
+          status?: string
+          title?: string | null
           type: string
           user_id: string
           workspace_id: string
@@ -199,7 +217,11 @@ export type Database = {
           content?: string
           created_at?: string
           deleted_at?: string | null
+          error?: string | null
           id?: string
+          source_url?: string | null
+          status?: string
+          title?: string | null
           type?: string
           user_id?: string
           workspace_id?: string
@@ -576,6 +598,16 @@ export type Database = {
           subscription_status: string
           workspace_id: string
         }[]
+      }
+      svc_update_source_status: {
+        Args: {
+          _content?: string
+          _error?: string
+          _source_id: string
+          _status: string
+          _title?: string
+        }
+        Returns: undefined
       }
       svc_upsert_stripe_price_tier_map: {
         Args: { _entries: Json }
