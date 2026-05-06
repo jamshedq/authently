@@ -38,6 +38,7 @@
     "sonner": "^2.0.7",
     "stripe": "^17.0.0",
     "tailwind-merge": "^2.5.5",
+    "@trigger.dev/sdk": "4.4.4",
     "zod": "^3.25.0"
   },
   "devDependencies": {

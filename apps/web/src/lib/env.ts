@@ -58,6 +58,18 @@ const ServerEnvSchema = z.object({
   // because OpenAI isn't configured locally. The transcription service
   // throws a clear error when invoked without it set.
   OPENAI_API_KEY: z.string().min(1).optional(),
+  // Trigger.dev — required by the source-creation service modules
+  // (Sprint 07 C2b.2) that call `tasks.trigger("extract-from-url"|...)`.
+  // The SDK auto-reads TRIGGER_SECRET_KEY from process.env when no
+  // explicit configure() is called; declaring it in the schema makes the
+  // env validation surface honest (boot-time visibility of what the app
+  // expects). Optional for the same reason as STRIPE_SECRET_KEY: code
+  // paths that don't trigger tasks (most of the app) shouldn't fail to
+  // boot because Trigger.dev isn't configured locally. When invoked
+  // without it set, the SDK throws "apiClientManager.clientOrThrow"
+  // which the service modules' try/catch surfaces as `trigger_failed:`
+  // and triggers the row rollback path.
+  TRIGGER_SECRET_KEY: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof ServerEnvSchema>;

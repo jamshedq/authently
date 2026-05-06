@@ -20,6 +20,7 @@
     "test:auth": "pnpm --filter @authently/db test:auth",
     "test:billing": "pnpm --filter @authently/db test:billing",
     "test:sources": "pnpm --filter @authently/db test:sources",
+    "test:storage": "pnpm --filter @authently/db test:storage",
     "test:web": "pnpm --filter @authently/web test:web",
     "test:jobs": "pnpm --filter @authently/jobs test:jobs",
     "test:python": "pnpm --filter @authently/jobs test:python",
