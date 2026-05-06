@@ -252,11 +252,13 @@ Two-week sprints. Cowork column shows primary working mode: 🤖 Cowork-ready, �
 
 ## 5.1 Phase gates (non-negotiable)
 
-- **End of Sprint 12 (month 6):** OSS public release + paid hosted launch. 5 platforms, Authenticity Engine, public API, MCP server, n8n+Make nodes all live. Free-OSS / $49 Solo / $129 Studio tiers active.
+- **End of Sprint 12 (month 6):** OSS public release + paid hosted launch. 5 platforms, Authenticity Engine, public API, MCP server, n8n+Make nodes all live. Free-OSS / $49 Solo / $129 Studio tiers active. **[AMENDED 2026-05-06 — launch target moved to Sprint 15. See §5.3.]**
 - **End of Sprint 20 (month 10):** Pro tier with video + BYO-key. Public roadmap, contributor program, dev-community campaign live. If OSS metrics (stars, contributors, self-host installs) are weak, pivot to API-first dev-tool focus before Phase 3.
 - **End of Sprint 28 (month 14):** Agency tier launch. 9 platforms, inbox, vault, translation, link-in-bio, mobile PWA. Commercial license offering for enterprises.
 
 ## 5.2 Sprint plan amendments
+
+**[2026-05-06]** Strategic re-baseline locked. See §5.3 for full launch-shape changes. Individual sprint amendments below remain valid for sprint-row deltas; strategic-level changes (launch target, launch-blocking list, threading, MCP placement) are captured in §5.3 as a single coherent artifact rather than scattered across this table.
 
 This section captures the gap between the §5 sprint table (canonical-as-planned) and the actual ship state as the plan unfolds. The §5 table itself is preserved as the original 28-sprint roadmap; this section records where reality has updated the plan. The convention is exceptions-only — sprints whose actual deliverables match the original plan are not listed, only those whose actual state diverges. Sprints 01–02 shipped as planned and are not listed here. The full deferral index lives in `SPRINT_04_carryovers.md`; the amendments below surface only the structural drift that bears on Phase 1 / Phase 2 risk.
 
@@ -277,6 +279,64 @@ S12 currently carries the densest deliverable list in the entire plan: TikTok ad
 ### Carryover index
 
 `SPRINT_04_carryovers.md` is the canonical deferral index; entries there carry their own urgency-tells and dependency notes. The build plan calls out only items whose placement materially shifts Phase 1 or Phase 2 risk: Stripe cancellation (Phase 1 paywall correctness — must land before any S12 launch), Resend domain + SMTP (Phase 1 hosted-launch deliverability — must land before S12 or the launch sends email from a generic shared sender), and the multi-owner workspace gap surfaced above. Everything else stays in the carryovers doc and gets scheduled at the relevant sprint's spec-lock.
+
+## 5.3 Re-baseline 2026-05-06
+
+**Provenance.** Strategic re-baseline locked 2026-05-06 in a dedicated session run before Sprint 08 spec-lock. Trigger: 3-sprint slip since S03 (S06 doing S03's ingestion work; S04's voice fingerprint and S05's remix engine unplaced relative to the §5 canonical roadmap). The re-baseline session is the strategic-level analog of §5.2's recommended S12 readiness check — applied at the launch-target altitude rather than the single-sprint altitude. Decisions below are LOCKED; re-litigation requires its own re-baseline session.
+
+### Launch target
+
+Phase 1 launch moves from S12 to S15. The §5.1 phase-gate prose retains its original S12 framing for canonical-as-planned reference; the active launch target is S15 per this section.
+
+### Launch-blocking (must ship by S15)
+
+- Voice fingerprint extraction
+- Remix engine v1
+- Authenticity Engine UI
+- Twitter/X adapter (OAuth + publish)
+- LinkedIn adapter (OAuth + publish + dev portal submission)
+- Onboarding flow
+- Failed-post UX
+- Basic analytics
+- OSS launch (AGPL public release)
+- Paid hosted launch
+
+### Phase 2 (post-launch, S16 onward)
+
+- Brand kit + draft refinement chat
+- AI image + carousel generation
+- REST API v1 (versioning, rate limits, docs, stability guarantees)
+- Meta adapters (Facebook + Instagram, including App Review)
+- TikTok adapter (Content Posting API audit)
+- n8n / Make community nodes
+
+### Threading
+
+Serial, not parallel. The Authenticity Engine block (voice fingerprint → remix engine → Authenticity Engine UI) ships as a coherent unit before adapter work begins. Solo capacity + two deep domains with minimal shared substrate make parallel execution a half-shipped risk. Calendar slack from the S15 launch target absorbs the linear schedule.
+
+### MCP server v1 — bounded adjunct
+
+**Placement.** Early S14, as a small adjunct alongside second-adapter polish + Authenticity Engine UI hardening + launch prep. Not a dedicated sprint.
+
+**Scope contract.** 5 named operations, locked at S14 spec-lock cycle (not at this re-baseline). Pre-call for those 5: `create_source`, `list_sources`, `create_draft`, `list_drafts`, `publish_draft`. Final call deferred to S14 spec-lock based on the actual call surface at that point.
+
+**Escape valve, pre-committed.** If MCP build hits trouble during S14, the fallback is "cut MCP from S14, carryover entry for Phase 2, ship S15 without it." MCP cannot be the lever that slips launch. This pre-commitment is what makes the bounded-adjunct placement safe; without it, the placement collapses into a dedicated MCP sprint by attrition.
+
+**Rationale.** REST API v1 and MCP v1 are different categories of work — REST is infrastructure that enables integrations; MCP is itself an integration. Conflating them as "developer-facing" holds MCP hostage to REST's larger surface area. Shipping MCP in Phase 1 lands the dev-community-acquisition story at launch; deferring REST to Phase 2 ships it with the stability guarantees it deserves.
+
+### Positioning constraint
+
+Two-adapter Phase 1 footprint (X + LinkedIn) means the launch story is "authenticity engine for serious creators on Twitter and LinkedIn," not "publish anywhere with your authentic voice." The differentiation story (authenticity engine vs. generic-AI competitors) carries the launch narrative; the breadth story arrives in Phase 2 with Meta and TikTok adapters.
+
+### Sprint slotting (sequence-level)
+
+These are sequence-level placements, not detailed scope. Each sprint's spec-lock cycle locks the actual sub-item breakdown.
+
+- **S08** — B2 (YouTube via yt-dlp) + B4 (source orchestration). Carryover from S07. Closes out the sources vertical slice.
+- **S09–S11** — Authenticity engine block. Voice fingerprint, remix engine, Authenticity Engine UI in some order (locked at each sprint's spec-lock cycle).
+- **S12–S13** — Adapter block. X + LinkedIn adapters, scheduler + content queue + drafts library, calendar UI, bulk CSV upload.
+- **S14** — Second-adapter polish + Authenticity Engine UI hardening + onboarding + failed-post UX + basic analytics + MCP v1 (bounded adjunct, see above).
+- **S15** — LAUNCH GATE. OSS public release + paid hosted launch. Scope locked at S14 spec-lock based on what's still owed.
 
 # 6. Distribution plan (5–10 hrs/week, all 14 months)
 
