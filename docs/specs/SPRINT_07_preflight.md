@@ -137,6 +137,34 @@ wrapper catches and routes to `transient: python_runtime:<ErrorName>`.
 The JSON contract from B3-Q2 is unchanged; only the exit-code
 dimension simplifies.
 
+**[NOTE 2026-05-06 — CI pins Python 3.12; effective minimum is 3.10 (driven by `pdfminer.six` transitive dep); production runtime version still unconfirmed.]**
+Sprint 07 C2.5 introduces the `test:python` CI gate, which sets up
+Python via `actions/setup-python@v5` with `python-version: '3.12'`.
+This is a CI-side choice, not a production-runtime declaration:
+Trigger.dev v4's `pythonExtension` builds Python in `/opt/venv`
+inside the deployment container, and the actual minor version is
+determined by the container — not pinned in pre-flight (per Item 2's
+"Python runtime compatibility" paragraph). `trafilatura==2.0.0` and
+`pdfplumber==0.11.9` themselves claim Python `>=3.8`, **but
+`pdfplumber`'s current transitive dependency `pdfminer.six` (latest
+as of 2026-05-06) requires Python `>=3.10`** — confirmed empirically
+during C2.5 setup when local Python 3.9.6 failed to resolve the
+dependency tree (`ERROR: Could not find a version that satisfies the
+requirement pdfminer.six==<latest>`). **The effective minimum runtime
+is therefore Python 3.10, not 3.8.** CI's 3.12 pin sits comfortably
+above this floor. **Known gap:** if Trigger.dev's production container
+ships an older minor (e.g., 3.10 or 3.11), CI could pass while
+production silently runs a different runtime; if it ships 3.9 or
+older, production install of `pdfplumber` would fail outright. The
+gap is low-risk for the current code shape — both modules are
+syntactically conservative (no `match` statements, no PEP 695 type
+syntax, no walrus-in-comprehension oddities) — but worth resolving
+via `--log-level debug --dry-run` at C2b/deployment time per Item 2's
+existing verification path. If the production runtime is confirmed
+between 3.10 and 3.11, bump the CI pin down to match; if older than
+3.10, escalate (the dep tree won't resolve). Recorded here so the
+gap is visible in the pre-flight doc, not just in conversation.
+
 ## Item 2 — Trafilatura + pdfplumber pinned versions
 
 **Locked design context.** SPRINT_07.md E3: dependencies pinned in

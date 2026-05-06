@@ -1,0 +1,9 @@
+# Sprint 07 C2.5 — pytest dev dependencies for apps/jobs/python/.
+#
+# Pinned versions only (per Sprint 07 pre-flight Item 2's "no version
+# ranges" convention). Stdlib-only mocking (pytest's built-in monkeypatch
+# + capsys, augmented by unittest.mock where finer control is needed)
+# means no additional HTTP-mocking library is pulled in — the production
+# modules use stdlib urllib + library functions (trafilatura.fetch_url,
+# pdfplumber.open) that monkeypatch.setattr targets directly.
+pytest==8.3.4

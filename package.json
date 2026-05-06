@@ -22,6 +22,7 @@
     "test:sources": "pnpm --filter @authently/db test:sources",
     "test:web": "pnpm --filter @authently/web test:web",
     "test:jobs": "pnpm --filter @authently/jobs test:jobs",
+    "test:python": "pnpm --filter @authently/jobs test:python",
     "test:license-headers": "node scripts/check-license-headers.mjs",
     "typecheck": "turbo run typecheck",
     "db:migrate": "supabase migration up",
