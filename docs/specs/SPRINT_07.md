@@ -546,6 +546,36 @@ then tabbed upload extension:
 5. Pause for review against spec. Manual smoke not required for
    this commit (no new browser-facing surface; server actions land
    in commit 4).
+
+**[AMENDED 2026-05-06 — Commit 2.5 inserted between Commits 2 and 3 per Sprint 07 C2a Checkpoint 2 review. The original sequencing folded Python module unit tests into Commit 2's ~14-test scope per B3-Q5; during C2a Checkpoint 2, the implementer surfaced that pytest infrastructure spin-up was not the established pattern and would meaningfully expand C2's session size. Rather than leave Python module testing as a soft "we'll get to it" deferral, the obligation is converted into a structural commitment via this amendment.]**
+
+5a. **Commit 2.5** (B3 backend tests): pytest infrastructure for
+    `apps/jobs/python/` and ~6-8 Python module tests covering both
+    extraction modules' contract — argv shape, JSON stdout shape,
+    exit codes, error class prefixing (`extraction_failed:`,
+    `network:`, `validation:`). Adds a 7th standing gate
+    `test:python` to the gate list.
+
+    **Scope is infrastructure + tests only.** No production code
+    changes. No edits to `apps/jobs/python/*.py` beyond what tests
+    directly require (e.g., refactoring `main()` for testability if
+    a function-extraction proves necessary for mocking). Scope
+    strictly bounded to `apps/jobs/python/` — no apps/web edits, no
+    other apps/jobs files, no migrations. Negative scope is the
+    bound: anything outside `apps/jobs/python/` is out of scope by
+    construction, regardless of how convenient the change appears
+    while pytest is being spun up.
+
+    **Commit 3 cannot begin until Commit 2.5 lands.** Pre-committed
+    and binding, not a possibility to weigh later. Same discipline
+    as the MCP escape valve in build_plan.md §5.3 — the structural
+    commitment is the defense against deferred-test-debt slip,
+    which is exactly the failure mode this amendment exists to
+    prevent.
+
+5b. Pause for review against spec. Manual smoke not required
+    (test infrastructure only).
+
 6. **Commit 3** (list page): page.tsx + sources-list.tsx +
    delete-action.ts + list/delete service modules + 5 web tests.
    Manual smoke required per CLAUDE.md discipline (new server

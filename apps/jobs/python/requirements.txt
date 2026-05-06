@@ -1,0 +1,7 @@
+# Sprint 07 C2a — pinned versions per SPRINT_07_preflight.md Item 2.
+# Both libraries support Python >=3.8; Trigger.dev v4 pythonExtension
+# creates the venv at /opt/venv inside the deployment container, with
+# the runtime version determined by the deployment image (verify via
+# `--log-level debug --dry-run` if a tighter floor is needed).
+trafilatura==2.0.0
+pdfplumber==0.11.9

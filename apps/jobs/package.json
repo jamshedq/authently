@@ -17,6 +17,7 @@
     "@authently/db": "workspace:*",
     "@authently/shared": "workspace:*",
     "@supabase/supabase-js": "^2.45.4",
+    "@trigger.dev/python": "4.4.4",
     "@trigger.dev/sdk": "4.4.4",
     "stripe": "^17.0.0",
     "zod": "^3.25.0"

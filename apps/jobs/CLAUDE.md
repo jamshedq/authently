@@ -285,7 +285,7 @@ extensions: [
 #### Python
 
 ```ts
-import { pythonExtension } from "@trigger.dev/build/extensions/python";
+import { pythonExtension } from "@trigger.dev/python/extension";
 
 extensions: [
   pythonExtension({
@@ -295,7 +295,8 @@ extensions: [
   }),
 ];
 
-// Usage in tasks
+// Usage in tasks (runtime helper from same package, root export)
+import { python } from "@trigger.dev/python";
 const result = await python.runInline(`print("Hello, world!")`);
 const output = await python.runScript("./python/script.py", ["arg1"]);
 ```
