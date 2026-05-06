@@ -49,14 +49,51 @@ service-role.
 
 ## RPC perimeter tests
 
-Every new `public.*` SECURITY DEFINER function gets a perimeter test:
-- `anon` client call → expect `error.code === "42501"` (insufficient
-  privilege from PostgREST)
-- `authenticated` non-member call → expect either an explicit error
-  OR a successful no-op (depends on the RPC body — document which)
+Every new `public.*` SECURITY DEFINER function gets a perimeter test.
+**The expected anon error code depends on the function's role** —
+`svc_*` and `api_*` perimeter tests look superficially similar but
+assert different codes, and getting it wrong produces a test that
+"passes" without actually exercising the perimeter.
 
-See `tests/billing/process-stripe-event-rls.test.ts` for the canonical
-shape.
+### `svc_*` (service-role-only) — anon → `42501` at the GRANT layer
+
+`svc_*` functions are revoked from `public, anon, authenticated` and
+granted to `service_role` only. PostgREST rejects anon and authenticated
+callers at the **GRANT layer with `42501`** (insufficient privilege)
+before the function body runs.
+
+```ts
+const anon = createAnonClient();
+const { error } = await anon.rpc("svc_some_function", { ... });
+expect(error?.code).toBe("42501");
+```
+
+Canonical shape: `tests/billing/process-stripe-event-rls.test.ts`.
+
+### `api_*` (auth-callable) — anon → `22023` at the function body
+
+`api_*` functions grant EXECUTE to `authenticated`. PostgREST also
+permits the anon role to invoke them (since the function is a granted
+SECURITY DEFINER); the defensive `auth.uid() IS NULL` check inside the
+wrapper body is what rejects anon, with **`22023`** (invalid parameter
+value, "user id is required").
+
+```ts
+const anon = createAnonClient();
+const { error } = await anon.rpc("api_some_function", { ... });
+expect(error?.code).toBe("22023");
+expect(error?.message).toMatch(/user id is required/i);
+```
+
+Canonical shape: `tests/sources/api-create-source-audio.test.ts`.
+
+### Authenticated non-members → `42501` (both classes)
+
+For `api_*`, the workspace-membership check
+(`private.is_workspace_member`) inside the wrapper body raises `42501`
+("not a member of workspace") for authenticated callers who aren't
+members. For `svc_*`, authenticated callers are rejected at the GRANT
+layer (same as anon) with `42501`. Different mechanisms, same code.
 
 ## Write-path convention: DEFINER RPCs as sole write path
 
