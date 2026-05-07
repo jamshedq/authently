@@ -60,7 +60,11 @@ import {
 const SOURCES_PDF_BUCKET = "sources-pdf";
 const SIGNED_URL_TTL_SECONDS = 120;
 
-function storagePathFor(workspaceId: string, sourceId: string): string {
+// Exported for cross-package convergence test at
+// apps/web/tests/services/sources/computed-path.test.ts (C2b.3 Checkpoint
+// 3, Resolution 4 Option A). The function is otherwise module-private in
+// spirit — only test code imports it across the package boundary.
+export function storagePathFor(workspaceId: string, sourceId: string): string {
   return `ws/${workspaceId}/${sourceId}.pdf`;
 }
 
@@ -147,6 +151,12 @@ export async function runExtractFromPdf(
 
 export const extractFromPdfTask = defineTenantTask({
   id: "extract-from-pdf",
+  // CROSS-REFERENCE: apps/web/tests/services/sources/wire-boundary.test.ts
+  // mirrors this payloadSchema for runtime payload-parse verification at
+  // the apps/web → apps/jobs wire boundary. If the schema below changes,
+  // update the mirror in lockstep. Drift defense is convention-enforced
+  // (C2b.3 Checkpoint 1 lock, 2026-05-07; Option B). PDF wire deliberately
+  // omits source_url — Storage path is computed-not-passed per C2a lock.
   payloadSchema: z.object({
     source_id: uuidSchema,
   }),
