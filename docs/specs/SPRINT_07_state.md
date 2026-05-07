@@ -49,7 +49,11 @@
 
 ### Tracking observations
 
-**`post-signup-reconcile` flake** (PostgREST upstream-server error, first observed PR #26): **3 consecutive clean PRs since first observation (#27, #28, #29). Threshold for reclassification is 4 consecutive clean. Status: 3 / 4. Do NOT reclassify as resolved-by-attrition until the next PR comes in clean on first try.** Probabilistic thresholds need mechanical counts, not vibes-based — three feels like four when the trajectory is good; the threshold exists exactly to defend against that pull.
+**`post-signup-reconcile` flake** (PostgREST upstream-server error, first observed PR #26): **Reclassified resolved-by-attrition at PR #30, 2026-05-07 (4/4 threshold met).** PR #27, #28, #29 were the first three consecutive clean PRs since first observation; PR #30 was the fourth and triggered reclassification per the strict-threshold discipline (no "one more for safety" creep). PR #31 was clean on first push (5/5 post-threshold confirmation) but was not required for reclassification.
+
+**Recurrence-as-new-observation rule applies** — if `post-signup-reconcile` surfaces on a future PR, that's data point one of a new observation, not data point N+1 of the old one. Reclassification at threshold doesn't invalidate the test from future tracking; it just stops the carry of this specific prior observation. See `feedback_probabilistic_tracking.md` (memory) for the full discipline.
+
+Probabilistic thresholds need mechanical counts, not vibes-based — three feels like four when the trajectory is good; the threshold exists exactly to defend against that pull, and the reclassification *at* threshold (not past it) is the honest reading.
 
 ## 2. Durable conventions established (with canonical doc pointers)
 
