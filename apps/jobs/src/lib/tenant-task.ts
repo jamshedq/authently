@@ -65,6 +65,14 @@ export function defineTenantTask<
   // Merge workspace_id into the user's schema. zod handles the runtime
   // validation; the inferred payload type at the schemaTask boundary is
   // { workspace_id: string } & z.infer<TExtraSchema>.
+  //
+  // CROSS-REFERENCE: apps/web/tests/services/sources/wire-boundary.test.ts
+  // mirrors this merge pattern (workspace_id prepended to the user's
+  // payloadSchema) to verify apps/web's wire payloads parse correctly. If
+  // the merge structure changes (additional fields injected, workspace_id
+  // field name changed, schema-shape spread modified, etc.), update the
+  // mirror's wire-schema construction in lockstep. Drift defense is
+  // convention-enforced (C2b.3 Checkpoint 1 lock, 2026-05-07; Option B).
   const schema = z.object({
     workspace_id: uuidSchema,
     ...opts.payloadSchema.shape,

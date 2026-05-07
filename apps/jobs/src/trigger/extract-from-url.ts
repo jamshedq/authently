@@ -178,6 +178,13 @@ export { headAndClassify };
 
 export const extractFromUrlTask = defineTenantTask({
   id: "extract-from-url",
+  // CROSS-REFERENCE: apps/web/tests/services/sources/wire-boundary.test.ts
+  // mirrors this payloadSchema for runtime payload-parse verification at
+  // the apps/web → apps/jobs wire boundary. If the schema below changes
+  // (added field, changed type, removed field), update the mirror in
+  // lockstep. Drift defense is convention-enforced (C2b.3 Checkpoint 1
+  // lock, 2026-05-07; Option B — parallel-mirror over direct-schema-import
+  // to conserve scope at the cost of mechanism-enforced drift detection).
   payloadSchema: z.object({
     source_id: uuidSchema,
     source_url: z.string().url(),

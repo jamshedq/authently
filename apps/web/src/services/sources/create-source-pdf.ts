@@ -68,7 +68,12 @@ const metadataSchema = z.object({
   title: z.string().min(1),
 });
 
-function storagePathFor(workspaceId: string, sourceId: string): string {
+// Exported for cross-package convergence test at
+// apps/web/tests/services/sources/computed-path.test.ts (C2b.3 Checkpoint
+// 3, Resolution 4 Option A). The function is otherwise module-private in
+// spirit — only test code imports it directly. Production callers within
+// this module use it via the closure below.
+export function storagePathFor(workspaceId: string, sourceId: string): string {
   return `ws/${workspaceId}/${sourceId}.pdf`;
 }
 
