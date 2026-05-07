@@ -633,6 +633,37 @@ then tabbed upload extension:
     (integration boundary tests at apps/web side; no new
     browser-facing surface).
 
+**[AMENDED 2026-05-07 — C3 sub-sequencing block. Same structural-amendment discipline as C2.5 (lines 550-575) and C2b (lines 584-613). C3 has six distinct UI behaviors per the spec — E5 list rendering, E5 empty state, E5 sort by `created_at DESC`, E2 polling at 3-5s, E6b delete confirmation modal, E6c failed-row error class display. Treating "Commit 3" as monolithic risks the integration-drift failure mode that motivated the C2b split: too many interacting concerns in a single commit, checkpoint-attribution clarity lost, review surface diffuse. C3 is split at prompt time into C3.1 / C3.2 / C3.3, each shipping a coherent review surface. Sub-items 5g / 5h / 5i below collectively achieve what the original Commit 3 description below prescribes; the original Commit 3 description remains canonical for content scope.]**
+
+5g. **C3.1** (list page baseline): server component reading
+    sources, compact list rendering (title + type + status +
+    time), empty state with link to upload page, sort by
+    `created_at DESC`. NO polling, NO delete UI, NO failed-row
+    error class display. ~6-8 tests covering rendering + empty
+    state + RLS at page level.
+
+5h. **C3.2** (status polling): client-side `setInterval` (3-5s)
+    polling while any visible row is in `'processing'`; halts on
+    resolution. Builds on C3.1's list. Per E2 lock — Realtime
+    upgrade explicitly deferred. ~2-3 tests covering polling
+    behavior with `vi.useFakeTimers`.
+
+5i. **C3.3** (delete UI + failed-row error display): confirmation
+    modal per E6b; delete server action wrapping
+    `api_delete_source` service from C2b.2; error class label
+    (mapping `extraction_failed:` / `network:` / `timeout:` /
+    `transient:` to human-readable labels) + expandable error
+    text per E6c. The "interactive bits" of the list page. ~3-4
+    tests covering delete flow + error class label mapping +
+    click-to-expand behavior. **Manual smoke required** per
+    CLAUDE.md "Framework rules not caught by automated gates"
+    discipline (new server action: `delete-action.ts`).
+
+5j. Pause for review against spec.
+
+**Commit 4 cannot begin until C3.3 lands.** Same
+structural-commitment discipline as C2.5 + C2b.
+
 6. **Commit 3** (list page): page.tsx + sources-list.tsx +
    delete-action.ts + list/delete service modules + 5 web tests.
    Manual smoke required per CLAUDE.md discipline (new server
