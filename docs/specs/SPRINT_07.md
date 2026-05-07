@@ -301,13 +301,18 @@ in `sources.error`):**
 - `extraction_failed:` — Trafilatura/pdfplumber library returned
   no usable content (stripped HTML had no main body; PDF had no
   extractable text layer)
-- `network:` — URL fetch failed (timeout, DNS resolution failure,
-  non-2xx response, unsupported Content-Type)
+- `network:` — URL fetch failed (DNS resolution failure, non-2xx
+  response, unsupported Content-Type). [AMENDED 2026-05-07: dropped
+  "timeout" from this list — code emits a distinct `timeout:` class
+  for HEAD timeouts, see below.]
 - `transient:` — Python subprocess crashed unexpectedly, or
   Trigger.dev infra failure (retryable in principle; user-driven
   retry via delete-and-resubmit per E6a)
-- `timeout:` — task exceeded execution budget (configured at
-  Trigger.dev task definition level; budget locked at pre-flight)
+- `timeout:` — HEAD request exceeded its 5s budget (`timeout:
+  head_request`), or task exceeded execution budget (configured at
+  Trigger.dev task definition level; budget locked at pre-flight).
+  Distinguished from `network:` because remote-server-slow ≠
+  remote-server-unreachable — different operational categories.
 
 **Task return shape (B3-Q2 locked):** `{ ok: true, content, title }`
 or `{ ok: false, error }`. `title` may be NULL when extraction
@@ -576,6 +581,58 @@ then tabbed upload extension:
 5b. Pause for review against spec. Manual smoke not required
     (test infrastructure only).
 
+**[AMENDED 2026-05-07 — C2b sub-sequencing block. After C2.5 landed (PR #27), Commit 3 was further blocked by the apps/web side of B3 backend. The original Commit 1 description (lines 195-227) bundled three `api_*` RPCs (`api_create_source_url`, `api_create_source_pdf`, `api_delete_source`) that were narrowed at C1 implementation to ship only schema + `svc_update_source_status`; the `api_*` RPCs moved to C2b. The original Commit 2 description (lines 540-548) bundled apps/web service modules with the apps/jobs Trigger.dev tasks; the apps/web portion was structurally too large alongside the apps/jobs work and split into C2b. C2b further split into three sub-commits during implementation. This block retrospectively documents the split (C2b.1 + C2b.2 already shipped) and locks C2b.3's scope per Option C from C2b.3 discovery (verification-strategy alignment with this spec's manual-smoke section above). Same structural-amendment discipline as C2.5.]**
+
+5c. **C2b.1** (`api_*` RPCs + perimeter tests):
+    `public.api_create_source_url`, `public.api_create_source_pdf`,
+    `public.api_delete_source` + 12 perimeter tests +
+    `packages/db/tests/CLAUDE.md` `api_*`/`svc_*` perimeter test
+    disambiguation. Shipped 2026-05-06 as commit `933406a` (PR #28).
+
+5d. **C2b.2** (apps/web action layer): apps/web service modules
+    orchestrating RPC + Storage upload + Trigger.dev wiring;
+    `sources-pdf` Storage bucket migration with RLS + 6 perimeter
+    tests in a new `test:storage` vitest project; apps/web→Trigger.dev
+    typed wrapper at `apps/web/src/lib/trigger.ts` with inline payload
+    types; computed-not-passed pattern and best-effort rollback
+    discipline locked at C2b.2 review; 12 service module tests in
+    `apps/web/tests/services/sources/`. Shipped 2026-05-06 as commit
+    `70ae37a` (PR #29).
+
+5e. **C2b.3** (integration boundary tests): ~7-10 tests at the
+    apps/web side of the apps/web ↔ apps/jobs seam, extending C2b.2's
+    integration-tier precedent. Four families: (a) wire-boundary
+    decoupling via cross-package import of `defineTenantTask` schema,
+    (b) rollback discipline edges including rollback-itself-fails
+    fallback for URL/PDF (row stays in `'processing'` as the E6d
+    accept-orphan state by design) and explicit verification of
+    E6d-Storage orphan acceptance, (c) computed-not-passed Storage
+    path convergence via cross-package import of both sides' path
+    functions, (d) trigger-boundary payload contracts. Cross-package
+    imports are testing-only coupling — runtime apps/web stays
+    type-decoupled from apps/jobs.
+
+    **Out of scope for C2b.3.** Full-pipeline verification (URL/PDF →
+    content visible to user, status transitions to `'ready'` /
+    `'failed'`) is spec-assigned to manual smoke testing per the
+    Manual smoke test section below; C2b.3 does NOT automate these.
+    `transient:` and `timeout:` failure classes are covered by
+    existing apps/jobs unit tests at
+    `apps/jobs/tests/trigger/extract-from-{url,pdf}.test.ts`; C2b.3
+    does NOT duplicate that coverage.
+
+    No new test gate, no new framework — extends
+    `apps/web/tests/services/sources/` vitest precedent (file
+    location resolved at C2b.3 discovery: alongside C2b.2 tests vs
+    sibling `apps/web/tests/integration/sources/`).
+
+    **Commit 3 cannot begin until C2b.3 lands.** Same
+    structural-commitment discipline as C2.5.
+
+5f. Pause for review against spec. Manual smoke not required
+    (integration boundary tests at apps/web side; no new
+    browser-facing surface).
+
 6. **Commit 3** (list page): page.tsx + sources-list.tsx +
    delete-action.ts + list/delete service modules + 5 web tests.
    Manual smoke required per CLAUDE.md discipline (new server
@@ -630,15 +687,21 @@ that automated gates can't exercise.
 - **URL extraction (PDF Content-Type)** — submit a URL whose
   Content-Type is `application/pdf`. Verify the URL task branches
   to pdfplumber. Same outcome shape as HTML.
-- **URL network failure** — submit a URL that 404s or times out.
-  Verify row transitions to `'failed'` with `network:` prefix in
-  the error column. List page renders the failed row with expand-
-  for-error UI.
+- **URL network failure (404 / DNS unreachable)** — submit a URL
+  that 404s or has unresolvable DNS. Verify row transitions to
+  `'failed'` with `network:` prefix in the error column. List page
+  renders the failed row with expand-for-error UI.
+- **URL HEAD timeout** — submit a URL where the HEAD request hangs
+  past the 5s budget. Verify row transitions to `'failed'` with
+  `timeout:` prefix (`timeout: head_request`) in the error column.
 - **PDF upload** — drag a known-good PDF onto the PDF tab. Verify
   same async flow: redirect → processing → ready.
 - **PDF malformed** — upload a corrupt PDF (or a renamed text file).
-  Verify `extraction_failed:` or `openai_rejected:`-equivalent
-  shape; failed row renders with expand-for-error.
+  Verify row transitions to `'failed'` with `extraction_failed:`
+  prefix in the error column (specifically `extraction_failed:
+  pdfplumber:<ErrorName>` for syntax errors / parse failures, or
+  `extraction_failed: no_content` for empty / no-text-layer PDFs);
+  failed row renders with expand-for-error.
 - **Delete** — delete a source from the list page. Confirm modal
   fires; confirmed delete soft-deletes. Row disappears after
   refresh.
