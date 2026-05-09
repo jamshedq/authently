@@ -283,6 +283,8 @@ Two Trigger.dev tasks (locked Sprint 07 (D)):
 
 Two Python modules under `apps/jobs/python/`:
 
+**[AMENDED 2026-05-08 — `extract_trafilatura.py` was renamed to `extract_from_url.py` during C2a Checkpoint 2 review (commit `a218de7`, PR #26). Rename motivated by recognition that the script's job is "URL extraction" (HTML or PDF, dispatched by Content-Type) rather than "trafilatura wrapper" — the URL-resolves-to-PDF case is handled inline in the same script via pdfplumber. All four references to `extract_trafilatura.py` in this spec (in this section + Section (D) summary at line 861) describe what was locked at spec-lock time; current code lives at `apps/jobs/python/extract_from_url.py`.]**
+
 - `extract_trafilatura.py` — reads URL from argv, invokes
   trafilatura library, prints `{"ok": true, "content", "title"}`
   or `{"ok": false, "error"}` to stdout. Exit 0 on success, 1 on

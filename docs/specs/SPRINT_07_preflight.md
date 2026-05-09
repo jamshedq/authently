@@ -165,6 +165,8 @@ between 3.10 and 3.11, bump the CI pin down to match; if older than
 3.10, escalate (the dep tree won't resolve). Recorded here so the
 gap is visible in the pre-flight doc, not just in conversation.
 
+**[NOTE 2026-05-08 — `extract_trafilatura.py` renamed to `extract_from_url.py` at C2a Checkpoint 2 (commit `a218de7`, PR #26).]** All four references to `extract_trafilatura.py` in Item 1 (lines 34, 80, 352, 382 — including the pseudocode in Item 4 below for symmetry) describe what was locked at pre-flight time. The C2a Checkpoint 2 review surfaced that the URL-resolves-to-PDF case (B3-Q1's second clause, forward-flagged in Item 3) is handled inline in the same script via pdfplumber, making "URL extraction" a more accurate description of the script's job than "trafilatura wrapper." Current code lives at `apps/jobs/python/extract_from_url.py`. Item 1's resolutions (Python build extension API, exit-code semantics correction) and Item 4's resolution (HEAD-and-branch task wrapper) remain valid; only the script name shifted.
+
 ## Item 2 — Trafilatura + pdfplumber pinned versions
 
 **Locked design context.** SPRINT_07.md E3: dependencies pinned in
