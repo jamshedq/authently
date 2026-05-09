@@ -17,7 +17,7 @@
 
 # Sprint 07 — working state
 
-## 1. Where we are (as of 2026-05-07 post-C3.1)
+## 1. Where we are (as of 2026-05-08 post-C3.2 + cleanup PRs)
 
 ### Shipped to `main`
 
@@ -36,12 +36,15 @@
 | C2b.3: integration boundary tests at apps/web ↔ apps/jobs seam | `d1998cc` | #33 |
 | C3 sub-sequencing amendment | `618a52a` | #34 |
 | C3.1: sources list page baseline (read-only render + empty state) | `de313e0` | #35 |
+| State file compaction at C3.1 close | `0aa3844` | #36 |
+| C3.2: status polling on sources list page | `f188aea` | #37 |
+| Cleanup: stale `extract_trafilatura.py` references + classification rationale | `78ee478` | #38 |
+| State file §3 cleared by PR #38 | `69df7cc` | #39 |
 
 ### Pending (in sequence)
 
-- **C3.2** — status polling at 3-5s while any row in `'processing'`; halts on resolution per E2 lock. See §4 — polling-mechanism question is the load-bearing unlocked decision.
-- **C3.3** — delete UI + failed-row error display per E6b/E6c. Manual smoke required (new server action `delete-action.ts`).
-- **C4** — tabbed upload page extension.
+- **C3.3** — delete UI + failed-row error display per E6b/E6c. See §4 — smoke-window prerequisite is the load-bearing constraint before drafting. Two distinct UI surfaces (E6b modal + E6c error display); manual smoke required for both.
+- **C4** — tabbed upload page extension (audio/URL/PDF tabs).
 
 ### Active gate baseline (7 standing)
 
@@ -51,13 +54,15 @@
 | `typecheck` | 6/6 |
 | `lint` | 6/6 |
 | `test:db` | 174 / 30 (vitest projects: rls, auth, billing, sources, storage) |
-| `test:web` | 86 / 21 |
+| `test:web` | 89 / 21 (was 86/21 pre-C3.2; +3 polling tests at C3.2) |
 | `test:jobs` | 32 / 5 |
 | `test:python` | 23 / 3 |
 
 ### Tracking observations
 
-**`post-signup-reconcile` flake** (PostgREST upstream-server error, first observed PR #26): **Reclassified resolved-by-attrition at PR #30, 2026-05-07 (4/4 threshold met).** PR #27, #28, #29 were the first three consecutive clean PRs since first observation; PR #30 was the fourth and triggered reclassification per the strict-threshold discipline. PR #31, #32, #33, #34, #35 all clean on first push (5+ post-reclassification confirmation).
+**`post-signup-reconcile` flake** (PostgREST upstream-server error, first observed PR #26): **Reclassified resolved-by-attrition at PR #30, 2026-05-07 (4/4 threshold met).** PR #27, #28, #29 were the first three consecutive clean PRs since first observation; PR #30 was the fourth and triggered reclassification per the strict-threshold discipline.
+
+**Continued post-reclassification baseline**: clean streak extending across docs and implementation PRs alike since PR #31. The reclassification wasn't premature; the flake genuinely resolved by attrition. Use `git log` + `gh pr list` to verify the current count if needed; the durable point is the reclassification holds.
 
 **Recurrence-as-new-observation rule applies** — if `post-signup-reconcile` surfaces on a future PR, that's data point one of a NEW observation, not data point N+1 of the old one. See `feedback_probabilistic_tracking.md` (memory) for the full discipline.
 
@@ -88,17 +93,27 @@ The two original flags from C2a/C2b.1 carryover:
 
 (Section retained as resolution record.)
 
-## 4. C3.2 framing (CRITICAL — DO NOT TRIM)
+## 4. C3.3 framing (CRITICAL — DO NOT TRIM)
 
-C3.2 introduces client-side polling, which has its own failure modes (memory leaks if intervals don't clean up, network thrash if polling continues after navigation, race conditions if state updates arrive out of order). The spec locks the polling interval (3-5s) and the stopping condition (no rows in `'processing'`). **What it doesn't lock — and what discovery should resolve — is the polling mechanism: SWR / React Query / native `useEffect` / server-sent events / some other pattern. Each has different reliability profiles and different test surfaces.**
+C3.3 ships two distinct UI surfaces — delete confirmation modal (E6b) wrapping `api_delete_source` from C2b.2, and failed-row error display (E6c) with error class label mapping (`extraction_failed:` / `network:` / `timeout:` / `transient:` → human-readable) + click-to-expand error text. Larger than C3.2 because two distinct concerns; different cognitive shape from C3.2's narrow polling work.
 
-Discovery shape per the C3.1 precedent: codebase-precedent-first, ecosystem survey if codebase is silent. The spec's prescription at SPRINT_07.md lines 405-410 is *"client-side `setInterval` (3-5s) calls `router.refresh()` while at least one visible row has `status = 'processing'`. Polling halts when no rows remain in `'processing'`."* Discovery confirms whether the codebase has any other polling pattern that should be preferred or that extends this naturally. Tests use `vi.useFakeTimers` per spec lines 447-449. ~2-3 tests covering interval setup/teardown.
+**Smoke-window prerequisite (load-bearing — DO NOT START WITHOUT VERIFYING):** both surfaces are spec-assigned manual smoke per the smoke checklist. C3.3 ships clean only when commit + smoke happen in the same session — splitting them is the verification-strategy drift `feedback_spec_verification_strategy.md` warns against. **Do not draft the C3.3 prompt until the smoke window is real.** "Smoke verified the implementation" only holds when smoke runs against fresh implementation; the longer the gap between commit and smoke, the weaker the verification. This is the load-bearing reason 2026-05-08's session stopped at C3.2 with C3.3 deferred.
+
+Automated tests cover the component surface only (~3-4 tests: modal renders, expansion toggles, delete action wires correctly). The verification-strategy discipline applies: let the spec's mechanism lead, don't automate what smoke already covers.
+
+Discovery shape per the C3.1/C3.2 precedent: codebase-precedent-first, ecosystem survey if codebase is silent. Open questions worth naming upfront so the next session opens warmer:
+
+- **Modal pattern**: codebase has a Dialog/Modal precedent (Radix/shadcn), or first instance?
+- **Server action delete pattern**: where do `delete-action.ts` siblings live; what's the wrapping convention; how does the action invoke the service module from C2b.2?
+- **Error class string format**: exact tokens emitted at C2a/C2b.2 — prefix-only (`extraction_failed:`) or full-string (`extraction_failed: no_content`); label-mapping granularity is downstream of this.
+- **Click-to-expand state placement**: per-row state inline in `SourcesList`'s map vs. extracted `<SourceRow>` component; codebase convention determines.
+
+Same divergence-detection discipline as C3.1/C3.2 (zero divergences for two consecutive commits — trajectory worth preserving).
 
 ## 5. Downstream sequencing
 
-- **C3.2:** status polling (next session)
-- **C3.3:** delete UI + failed-row error display (manual smoke required)
-- **C4:** tabbed upload page extension
+- **C3.3:** delete UI + failed-row error display (manual smoke required for both surfaces; see §4 prerequisite)
+- **C4:** tabbed upload page extension (audio/URL/PDF tabs)
 
 ## 6. Strategic locks still in force
 
