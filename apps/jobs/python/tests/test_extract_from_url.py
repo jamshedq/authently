@@ -367,14 +367,13 @@ def test_unsupported_content_type(monkeypatch, capsys) -> None:
 def test_missing_argv(monkeypatch, capsys) -> None:
     """argv with only script name (no url, no content_type) → validation: usage:....
 
-    Note: emitted string still references the OLD filename
-    'extract_trafilatura.py' (script renamed during C2a but the validation
-    message wasn't updated — flagged for follow-up cleanup, out of scope
-    for C2.5). Test asserts what the code actually emits, not what the
-    new filename would suggest.
+    The emitted message references the current filename (extract_from_url.py).
+    A prior version emitted the old draft name (extract_trafilatura.py, the
+    script's name before the C2a Checkpoint 2 rename); that residue was
+    cleaned up post-C3.2 — see SPRINT_07_state.md §3 cleanup flag.
     """
     payload = _run_main(monkeypatch, capsys, ["extract_from_url.py"])
     assert payload == {
         "ok": False,
-        "error": "validation: usage:extract_trafilatura.py <url> <content_type>",
+        "error": "validation: usage:extract_from_url.py <url> <content_type>",
     }

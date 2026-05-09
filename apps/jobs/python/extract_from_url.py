@@ -134,7 +134,7 @@ def extract_pdf_from_url(url: str) -> None:
 
 def main() -> None:
     if len(sys.argv) < 3:
-        emit_failure("validation: usage:extract_trafilatura.py <url> <content_type>")
+        emit_failure("validation: usage:extract_from_url.py <url> <content_type>")
         return
 
     url = sys.argv[1]
@@ -146,6 +146,11 @@ def main() -> None:
     elif content_type == "application/pdf":
         extract_pdf_from_url(url)
     else:
+        # Classified as `network:` rather than `extraction_failed:` because
+        # extraction was never attempted — from the user's perspective, the
+        # URL didn't resolve to consumable content (same family as a 404 or
+        # fetch timeout). `extraction_failed:` would imply we tried to
+        # extract and the library failed, which is a different failure mode.
         emit_failure(f"network: unsupported_content_type:{content_type}")
 
 
