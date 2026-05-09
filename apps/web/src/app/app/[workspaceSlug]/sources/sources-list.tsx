@@ -20,19 +20,38 @@
 
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type {
   SourceListRow,
   SourceType,
 } from "@/services/sources/list-sources";
 
-// Sprint 07 C3.1 — sources list component (baseline).
+// Sprint 07 C3.1 + C3.2 — sources list component.
 //
-// C3.1 ships render-only behavior: list rendering with empty-state
+// C3.1 shipped render-only behavior: list rendering with empty-state
 // branching, title fallback, type label mapping, status as raw string.
-// C3.2 will add `setInterval` polling for status updates while any row
-// is in 'processing'. C3.3 will add per-row delete UI + failed-row
-// error class label + click-to-expand error text.
+// C3.2 adds `setInterval` polling: while any visible row has
+// status === 'processing', a 4s interval calls router.refresh() so
+// the server component re-fetches and re-renders. The interval halts
+// when no processing rows remain. C3.3 will add per-row delete UI +
+// failed-row error class label + click-to-expand error text.
+//
+// === Polling design (C3.2) ===
+//
+// useEffect dependency on `hasProcessing` (not the full rows array)
+// means: when polling refreshes, new rows arrive, hasProcessing
+// recomputes; if it flips false, the effect re-runs, the cleanup
+// fires, and the early-return prevents re-arming. The stopping
+// condition flows from React's idiom, not custom logic.
+//
+// Race conditions across concurrent refreshes are delegated to
+// Next.js — router.refresh() supersedes any pending refresh by
+// design. No application-level debouncing or response-ordering.
+//
+// Polling interval: 4000ms (midpoint of spec's 3-5s range, E2 lock
+// at SPRINT_07.md line 389-393).
 //
 // === Empty-state branch lives here, not in page.tsx ===
 //
@@ -52,6 +71,8 @@ import type {
 // 'failed') in C3.1. Visual treatment (color coding, icons, status
 // pills) is C3.3 territory; the spec doesn't mandate baseline pill
 // rendering at C3.1.
+
+const POLL_INTERVAL_MS = 4000;
 
 const TYPE_LABELS: Record<SourceType, string> = {
   audio_transcript: "Audio",
@@ -74,6 +95,15 @@ type Props = {
 };
 
 export function SourcesList({ rows, workspaceSlug }: Props) {
+  const router = useRouter();
+  const hasProcessing = rows.some((r) => r.status === "processing");
+
+  useEffect(() => {
+    if (!hasProcessing) return;
+    const id = setInterval(() => router.refresh(), POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [hasProcessing, router]);
+
   if (rows.length === 0) {
     return (
       <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed p-8 text-sm">
