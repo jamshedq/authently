@@ -73,10 +73,20 @@
 - **Cross-package import for testing-only coupling** — relative paths from apps/web tests to apps/jobs source (e.g., `../../../../jobs/src/trigger/extract-from-pdf`). Visual ugliness is deliberate documentation. Origin C2b.3.
 - **Effective Python runtime floor: 3.10** — see `SPRINT_07_preflight.md` Item 1 `[NOTE 2026-05-06]`. Origin C2.5.
 
-## 3. Active flags awaiting cleanup commits
+## 3. Cleanup flags
 
-1. **`apps/jobs/python/extract_from_url.py:137`** — validation message references the old filename `extract_trafilatura.py`. Tests assert what the code currently emits.
-2. **`apps/jobs/python/extract_from_url.py main()` dispatch branch** — the `network: unsupported_content_type:<type>` classification choice (vs. `extraction_failed:`) could use an inline rationale comment.
+**[CLEARED 2026-05-08 by PR #38 (`78ee478`). No active flags remaining.]**
+
+The two original flags from C2a/C2b.1 carryover:
+
+1. ~~`apps/jobs/python/extract_from_url.py:137`~~ — validation message old-filename reference (cleared)
+2. ~~`apps/jobs/python/extract_from_url.py` `main()` dispatch branch~~ — `network: unsupported_content_type:<type>` classification rationale comment (cleared)
+
+**§3 listed two flags; cleanup discovered three.** The third was `apps/jobs/python/extract_pdfplumber.py:18` — co-located residue from the same C2a Checkpoint 2 rename, silent (no test asserting it) which is why §3 didn't track it. Surfaced during the cleanup grep for `extract_trafilatura` references, included in PR #38's scope per the scope-expansion diagnostic (no defensible alternative — leaving it would create inconsistency with §3's fixes; expansion surfaced explicitly in the PR body so the review surface saw the fork).
+
+**Carryover-flags discipline note for future readers:** the §3 list was authoritative-as-of-the-time-it-was-written, not authoritative-and-complete. Future cleanups should grep beyond listed flags to catch silent residues from the same rename/refactor. Same retrospective-structure shape as the C2b sub-sequencing amendment at SPRINT_07.md lines 584-613 — work locked at section-write time, structure that emerged during implementation documented retrospectively rather than presented as if it had been pre-known.
+
+(Section retained as resolution record.)
 
 ## 4. C3.2 framing (CRITICAL — DO NOT TRIM)
 
