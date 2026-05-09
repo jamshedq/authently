@@ -219,6 +219,8 @@ A library of detectors that flag AI-generic phrases and patterns before output s
 
 Two-week sprints. Cowork column shows primary working mode: 🤖 Cowork-ready, 🔀 Hybrid (human handles external systems), 👤 Human-driven.
 
+**[NOTE 2026-05-09 — the table below predates the 2026-05-06 launch-target re-baseline (commit `fd3f26b`, PR #23). Sprint numbering and content slotting were reshuffled at that re-baseline; the current authoritative sprint slotting is at §5.3 below. The table is preserved as historical context for the original pre-rebaseline plan but should not be read as authoritative for current sprint sequencing — anywhere `§5` and `§5.3` differ, `§5.3` wins.]**
+
 | **Sprint** | **Wks** | **Phase** | **Deliverable** | **Cowork** |
 |---|---|---|---|---|
 | S01 | 1–2 | P1 | Foundation: Next.js scaffold, Supabase, Stripe test, multi-tenant schema with workspace_id, RLS policies, deploy pipeline. Open-source repo public from day 1 (AGPL) | 🤖 |
