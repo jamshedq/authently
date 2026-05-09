@@ -15,7 +15,7 @@ this script.
 
 Per SPRINT_07.md C2a resolution: this script accepts ONLY signed URLs
 from Storage. The URL-resolves-to-PDF case (where a user-submitted URL
-HEADs to application/pdf) is handled inline in extract_trafilatura.py
+HEADs to application/pdf) is handled inline in extract_from_url.py
 via the same pdfplumber import — not by this script.
 
 Output contract per SPRINT_07.md B3-Q2:
