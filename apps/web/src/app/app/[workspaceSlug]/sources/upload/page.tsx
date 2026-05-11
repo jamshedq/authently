@@ -19,7 +19,7 @@
  */
 
 import { requireMembership } from "@/lib/api/require-membership";
-import { UploadWidget } from "./upload-widget";
+import { UploadTabs } from "./upload-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -30,27 +30,38 @@ export const dynamic = "force-dynamic";
 // requires Pro per the locked B1 pre-flight. Lives on the route
 // segment (page.tsx), not the server-action file — Next.js's
 // "use server" directive forbids non-async-function exports.
+//
+// Sprint 07 C4 extends the page from audio-only to tabbed (Audio |
+// URL | PDF) via the UploadTabs client component. The maxDuration
+// covers the audio sync flow's worst case; URL/PDF flows return
+// immediately with a sourceId (status='processing') and the heavy
+// extraction work happens in Trigger.dev tasks, well outside the
+// server-action budget.
 export const maxDuration = 300;
 
 type Props = {
   params: Promise<{ workspaceSlug: string }>;
 };
 
-// Sprint 06 B5 — file upload page. Server-component shell that asserts
-// workspace membership (any role) and mounts the client widget.
+// Sprint 06 B5 + Sprint 07 C4 — sources upload page. Server-component
+// shell that asserts workspace membership (any role) and mounts the
+// tabbed upload client component. Audio tab preserves Sprint 06
+// behavior unchanged; URL and PDF tabs are async source-creation flows
+// added in Sprint 07.
 export default async function UploadPage({ params }: Props) {
   const { workspaceSlug } = await params;
   const { workspace } = await requireMembership(workspaceSlug);
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-10">
-      <h1 className="text-2xl font-semibold">Upload audio source</h1>
+      <h1 className="text-2xl font-semibold">Upload a source</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Upload a short audio file (under 25 MB, up to ~25 minutes) to
-        transcribe and save as a source.
+        Add a source from audio, a URL, or a PDF. Audio is transcribed
+        synchronously; URLs and PDFs are processed in the background and
+        will appear in your sources list once ready.
       </p>
       <div className="mt-6">
-        <UploadWidget
+        <UploadTabs
           workspaceId={workspace.id}
           workspaceSlug={workspaceSlug}
         />
