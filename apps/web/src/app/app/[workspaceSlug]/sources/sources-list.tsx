@@ -23,20 +23,21 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type {
-  SourceListRow,
-  SourceType,
-} from "@/services/sources/list-sources";
+import type { SourceListRow } from "@/services/sources/list-sources";
+import { SourceRow } from "./source-row";
 
-// Sprint 07 C3.1 + C3.2 — sources list component.
+// Sprint 07 C3.1 + C3.2 + C3.3 — sources list component.
 //
 // C3.1 shipped render-only behavior: list rendering with empty-state
 // branching, title fallback, type label mapping, status as raw string.
-// C3.2 adds `setInterval` polling: while any visible row has
+// C3.2 added `setInterval` polling: while any visible row has
 // status === 'processing', a 4s interval calls router.refresh() so
 // the server component re-fetches and re-renders. The interval halts
-// when no processing rows remain. C3.3 will add per-row delete UI +
-// failed-row error class label + click-to-expand error text.
+// when no processing rows remain. C3.3 extracted per-row rendering into
+// `<SourceRow>` (per the codebase precedent — MemberRow / InvitationRow)
+// and added the delete confirmation modal (E6b) + failed-row error class
+// label + click-to-expand error text (E6c). Per-row state lives in
+// SourceRow; SourcesList owns the polling effect and the empty-state.
 //
 // === Polling design (C3.2) ===
 //
@@ -64,30 +65,8 @@ import type {
 // component-tested via React Testing Library + happy-dom. The spec's
 // intent ("Empty-state branch when zero rows") is satisfied; the branch
 // happens one level deeper than the literal text says.
-//
-// === Status display ===
-//
-// Status is rendered as the raw string ('processing' / 'ready' /
-// 'failed') in C3.1. Visual treatment (color coding, icons, status
-// pills) is C3.3 territory; the spec doesn't mandate baseline pill
-// rendering at C3.1.
 
 const POLL_INTERVAL_MS = 4000;
-
-const TYPE_LABELS: Record<SourceType, string> = {
-  audio_transcript: "Audio",
-  url_extraction: "URL",
-  pdf_extraction: "PDF",
-};
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 type Props = {
   rows: ReadonlyArray<SourceListRow>;
@@ -121,17 +100,7 @@ export function SourcesList({ rows, workspaceSlug }: Props) {
   return (
     <ul className="divide-y rounded-lg border">
       {rows.map((row) => (
-        <li
-          key={row.id}
-          className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 px-4 py-3 text-sm"
-        >
-          <span className="font-medium">{row.title ?? "Untitled"}</span>
-          <span className="text-muted-foreground">{TYPE_LABELS[row.type]}</span>
-          <span className="text-muted-foreground">{row.status}</span>
-          <span className="text-muted-foreground">
-            {formatDate(row.created_at)}
-          </span>
-        </li>
+        <SourceRow key={row.id} row={row} workspaceSlug={workspaceSlug} />
       ))}
     </ul>
   );
