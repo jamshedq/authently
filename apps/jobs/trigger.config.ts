@@ -64,7 +64,7 @@ export default defineConfig({
       pythonExtension({
         scripts: ["./python/**/*.py"],
         requirementsFile: "./python/requirements.txt",
-        devPythonBinaryPath: ".venv/bin/python",
+        devPythonBinaryPath: "./python/.venv/bin/python",
       }),
     ],
   },
