@@ -117,3 +117,34 @@ export async function triggerPdfExtraction(
   const handle = await tasks.trigger("extract-from-pdf", payload);
   return { id: handle.id };
 }
+
+// Sprint 08 B2 — YouTube extraction task wire payload + trigger wrapper.
+// Same { workspace_id, source_id, source_url } shape as extract-from-url
+// because both tasks operate on a user-pasted URL; the workspace_id is
+// merged in by defineTenantTask at apps/jobs/src/lib/tenant-task.ts.
+type ExtractFromYoutubeWirePayload = {
+  workspace_id: string;
+  source_id: string;
+  source_url: string;
+};
+
+/**
+ * Trigger the YouTube-extraction task for a newly created
+ * youtube_transcript source row. The task downloads audio via yt-dlp
+ * (apps/jobs/python/extract_from_youtube.py) and hands the bytes to
+ * @authently/ai/transcription for Whisper transcription. Wire payload:
+ * { workspace_id, source_id, source_url }. Throws on any SDK failure.
+ */
+export async function triggerYoutubeExtraction(
+  workspaceId: string,
+  sourceId: string,
+  sourceUrl: string,
+): Promise<TriggerHandle> {
+  const payload: ExtractFromYoutubeWirePayload = {
+    workspace_id: workspaceId,
+    source_id: sourceId,
+    source_url: sourceUrl,
+  };
+  const handle = await tasks.trigger("extract-from-youtube", payload);
+  return { id: handle.id };
+}

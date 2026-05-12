@@ -14,6 +14,9 @@ importers:
 
   apps/jobs:
     dependencies:
+      '@authently/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@authently/db':
         specifier: workspace:*
         version: link:../../packages/db

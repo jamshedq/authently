@@ -25,10 +25,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UploadWidget } from "./upload-widget";
 import { UrlTab } from "./url-tab";
 import { PdfTab } from "./pdf-tab";
+import { YoutubeTab } from "./youtube-tab";
 
-// Sprint 07 C4 — tabbed upload page extension. Three tabs at the
-// existing upload route: Audio (Sprint 06 widget mounted unchanged) |
-// URL (text input → uploadUrlAction) | PDF (drag/drop → uploadPdfAction).
+// Sprint 07 C4 — tabbed upload page extension. Sprint 08 B2 widened
+// to four tabs at the existing upload route: Audio (Sprint 06 widget
+// mounted unchanged) | URL (text input → uploadUrlAction) | PDF
+// (drag/drop → uploadPdfAction) | YouTube (text input →
+// uploadYoutubeAction; Sprint 08 B2 4th-tab end-position addition
+// per A3.3.1).
 //
 // State: local useState with "audio" as default. Preserves Sprint 06
 // entry-point behavior — page loads with the audio widget visible.
@@ -51,10 +55,11 @@ export function UploadTabs({ workspaceId, workspaceSlug }: Props) {
       onValueChange={setActiveTab}
       className="w-full"
     >
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="audio">Audio</TabsTrigger>
         <TabsTrigger value="url">URL</TabsTrigger>
         <TabsTrigger value="pdf">PDF</TabsTrigger>
+        <TabsTrigger value="youtube">YouTube</TabsTrigger>
       </TabsList>
       <TabsContent value="audio">
         <UploadWidget
@@ -67,6 +72,9 @@ export function UploadTabs({ workspaceId, workspaceSlug }: Props) {
       </TabsContent>
       <TabsContent value="pdf">
         <PdfTab workspaceId={workspaceId} workspaceSlug={workspaceSlug} />
+      </TabsContent>
+      <TabsContent value="youtube">
+        <YoutubeTab workspaceId={workspaceId} workspaceSlug={workspaceSlug} />
       </TabsContent>
     </Tabs>
   );
