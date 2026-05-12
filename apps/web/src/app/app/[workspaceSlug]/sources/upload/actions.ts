@@ -20,7 +20,7 @@
 
 "use server";
 
-import { transcribeAudio } from "@/services/transcription/openai-whisper";
+import { transcribeAudio } from "@authently/ai/transcription";
 import { createSourceAudio } from "@/services/sources/create-source-audio";
 import type { TranscribeAndSaveResult } from "./types";
 
