@@ -29,7 +29,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 // the mock.
 vi.mock("openai", async () => {
   const actual = await vi.importActual<typeof import("openai")>("openai");
-  const { getOpenAIMock } = await import("../../helpers/openai-mock");
+  const { getOpenAIMock } = await import("../helpers/openai-mock.ts");
   class FakeOpenAI {
     static APIError = actual.default.APIError;
     static BadRequestError = actual.default.BadRequestError;
@@ -57,15 +57,15 @@ import {
   registerOpenAIMock,
   resetOpenAIMock,
   type OpenAIMockState,
-} from "../../helpers/openai-mock";
+} from "../helpers/openai-mock.ts";
 
 // Force a non-empty OPENAI_API_KEY for the SDK constructor in
 // getOpenAIClient. The mock doesn't actually call OpenAI; the key
 // just needs to be present.
 process.env["OPENAI_API_KEY"] = "sk-test-dummy-for-unit-tests";
 
-import { transcribeAudio } from "@/services/transcription/openai-whisper";
-import { __resetClientForTests } from "@/services/transcription/openai-client";
+import { transcribeAudio } from "../../src/transcription/openai-whisper.ts";
+import { __resetClientForTests } from "../../src/transcription/openai-client.ts";
 
 function buildAudioFile(opts: {
   size?: number;
