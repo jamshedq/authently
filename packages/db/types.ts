@@ -69,6 +69,10 @@ export type Database = {
         Args: { _source_url: string; _user_id: string; _workspace_id: string }
         Returns: string
       }
+      create_source_youtube_impl: {
+        Args: { _source_url: string; _user_id: string; _workspace_id: string }
+        Returns: string
+      }
       create_workspace_for_user: {
         Args: { _name: string; _user_id: string }
         Returns: string
@@ -513,6 +517,10 @@ export type Database = {
         Returns: string
       }
       api_create_source_url: {
+        Args: { _source_url: string; _workspace_id: string }
+        Returns: string
+      }
+      api_create_source_youtube: {
         Args: { _source_url: string; _workspace_id: string }
         Returns: string
       }

@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@authently/ai": "workspace:*",
     "@authently/db": "workspace:*",
     "@authently/shared": "workspace:*",
     "@supabase/supabase-js": "^2.45.4",

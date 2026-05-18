@@ -5,3 +5,10 @@
 # `--log-level debug --dry-run` if a tighter floor is needed).
 trafilatura==2.0.0
 pdfplumber==0.11.9
+
+# Sprint 08 B2 — yt-dlp for YouTube audio extraction (per A2.1
+# (iii)+(α) lock: hard pin + weekly automated bump PR + manual smoke
+# on every bump). Bump cadence: weekly Monday 14:00 UTC via
+# .github/workflows/yt-dlp-bump.yml. Manual smoke-on-bump checklist
+# at docs/runbooks/yt-dlp.md "Manual bump procedure" section.
+yt-dlp==2025.10.14

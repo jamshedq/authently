@@ -40,3 +40,13 @@ export type UploadUrlResult =
 export type UploadPdfResult =
   | { ok: true; sourceId: string }
   | { ok: false; error: string };
+
+// Sprint 08 B2 — YouTube upload action result. Same shape as URL/PDF
+// cases. Error prefixes include validation: (workspace_id_missing,
+// source_url_missing, not_youtube_domain), rpc:, trigger_failed:,
+// trigger_failed_rollback_failed:. Downstream extraction failures
+// (the four YouTube prefixes from A2.3 + A3.1) surface through the
+// polling/status path, NOT through this action's result.
+export type UploadYoutubeResult =
+  | { ok: true; sourceId: string }
+  | { ok: false; error: string };

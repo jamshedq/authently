@@ -22,9 +22,11 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
-  // The shared/db packages ship as TypeScript source (no build step). Next
-  // must transpile them on the fly.
-  transpilePackages: ["@authently/shared", "@authently/db"],
+  // The shared/db/ai packages ship as TypeScript source (no build step). Next
+  // must transpile them on the fly. @authently/ai added Sprint 08 B0 when
+  // transcription was extracted from apps/web/src/services/transcription/
+  // into packages/ai/src/transcription/.
+  transpilePackages: ["@authently/shared", "@authently/db", "@authently/ai"],
   reactStrictMode: true,
   experimental: {
     serverActions: {
